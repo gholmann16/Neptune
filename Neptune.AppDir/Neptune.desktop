@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=/app/Neptune/Neptune.AppImage
+Name=Neptune
+Icon=Neptune
+Categories=Utility;
