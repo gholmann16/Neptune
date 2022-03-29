@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include "safe-exec.h"
 #include "deleteline.h"
 
 #define MAX_FILE_LENGTH 128
@@ -68,6 +70,7 @@ int main(int argc, char* argv[]) {
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     
     char filenamecp[MAX_FILE_LENGTH];
+    char finalfile[MAX_FILE_LENGTH + MAX_DIR_LEN];
     strcpy(filenamecp, file);
 
     chown(file, 0, 0);
@@ -81,13 +84,21 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
         *ptr = '\0';
     else 
         file[strlen(file)-9] = '\0';
+
+    strcat(finalfile, dir);
+    strcat(finalfile, "/");
+    strcat(finalfile, file);
+
+    sexecl("/bin/mv", filenamecp, finalfile, NULL);
+
+    //Adds shortcut 
+    if (strcmp(file, "Neptune") == 0) {
+        sexecl("/bin/ln", "-s", finalfile, "nep");
+        sexecl("/bin/mv", "nep", "/usr/local/bin", NULL);
+        printf("Shortcut nep created. Type \'nep\' to start program anywhere.\n");
+        printf("NOTE: Program \"Neptune\" might not be accessible by sudo due to sudo not using the $PATH variable. Command: nep will most likely work everywhere.\n");
+    }
     
-    rename(filenamecp, file);
-
-    char cmd[256];
-    sprintf(cmd, "mv %s %s", file, dir);
-    system(cmd);
-
     FILE *list = fopen("/etc/Neptune/list", "a");
     
     fprintf(list, "%s\n", file);
