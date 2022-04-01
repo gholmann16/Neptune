@@ -1,4 +1,5 @@
 AppRun
-compile.sh
+repeat.sh
 *.AppImage
+!appimaged-650-x86_64.AppImage
 todo.md
