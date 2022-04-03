@@ -20,8 +20,11 @@ How to use:
     Command 'nep' will now allow you to add or remove AppImages from your system
 
 Q: Why does Neptune use AppImages?
+
 A: AppImages work on any distribution meaning that they are easier for developers to develop for. They also come bundled with all system resources and are a single executable. In comparison to flatpaks or snaps, they also take up much less storage. And most importantly, over 1000 apps already exist in this format so it's a good choice for an app platform.
+
 Q: Why not manually install?
+
 A: Neptune makes installation more convenient, and integrates the apps into the system.
 
 Notes: 

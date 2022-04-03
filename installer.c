@@ -27,14 +27,14 @@ int main () {
     int invalid = 1;
     char answer[MAX_DIR_LEN];
     while(invalid) {
-        printf("Where would you like to store applications installed by this program? Default is /app/\n");
+        printf("Where would you like to store applications installed by this program? Default is /Applications/\n");
         fgets(answer, sizeof answer, stdin);
         if (answer[0] == '\n') {
-            printf("Storing to /app/ directory.\n");
-            mkdir("/app", 0755);
-            fprintf(dirFile, "/app");
-            strcat(patha, "/app");
-            answer[0] = '/'; answer[1] = 'a'; answer[2] = 'p'; answer[3] = 'p';
+            printf("Storing to /Applications/ directory.\n");
+            mkdir("/Applications", 0755);
+            fprintf(dirFile, "/Applications");
+            strcat(patha, "/Applications");
+            strncpy(answer, "/Applications", MAX_DIR_LEN);
             invalid = 0;
         }
         else if (answer[0] == '/') {
@@ -63,7 +63,7 @@ int main () {
     char cmd[8192];
     char cmd2[8192];
 
-    sprintf(cmd, "cp %s/appimaged-650-x86_64.AppImage %s/appiamged", getenv("APPDIR"), answer);
+    sprintf(cmd, "cp %s/appimaged-x86_64.AppImage %s/appimaged", getenv("APPDIR"), answer);
     system(cmd);
     sprintf(cmd2, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer);
     system(cmd2);
