@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include "betterexec.h"
 
 #define FILENAME_SIZE 64
 #define MAX_LINE 256
@@ -50,7 +51,7 @@ int unregisterApp(char filename[], char delete_line[])
 
     // delete the original file, give the temp file the name of the original file
     remove(filename);
-    system("mv /tmp/temppfile /etc/Neptune/list");
+    sexecl("/usr/bin/mv", "/tmp/temppfile", filename, NULL);
 
     return 0;
 }

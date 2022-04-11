@@ -15,9 +15,11 @@ How to use:
     gcc main.c -o Neptune.AppDir/AppRun
     appimagetool-x86_64.AppImage Neptune.AppDir/
 2. 
-    Install program using the AppImage (sudo ./Neptune-x86_64.AppImage install Neptune-x86_64.AppImage)
+    Install program using `sudo ./Neptune.Installer-x86_64.AppImage --install`
 3. 
     Command 'nep' will now allow you to add or remove AppImages from your system
+4. 
+    To uninstall Neptune use `sudo ./Neptune.Installer-x86_64.AppImage --uninstall`
 
 Q: Why does Neptune use AppImages?
 

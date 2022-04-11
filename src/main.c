@@ -7,15 +7,13 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <appimage/appimage.h>
-#include "betterexec.h"
 #include "registeration.h"
+#include "checkroot.h"
 
 #define MAX_FILE_LENGTH 128
 #define MAX_DIR_LEN 512
 
 int help();
-int list();
-int start(int c);
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);\
 //int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
@@ -44,13 +42,10 @@ int main(int argc, char* argv[]) {
             checkroot();
             return install(argv[2], getdir());
         }
-        else if(strcmp(argv[1], "uninstall\0") == 0) {
+        else if(strcmp(argv[1], "remove\0") == 0) {
             checkroot();
             return delete(argv[2], getdir());
         }
-        /*else if(strcmp(argv[1], "test\0") == 0) {
-            return test(argv[2], getdir());
-        }*/
         else if(appimage_get_type(argv[2], 0) != -1) {
             checkroot();
             return install(argv[2], getdir());
@@ -121,14 +116,9 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     return 0;
 }
 
-/*int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-    printf("AppImage type: %s", appimage_registered_desktop_file_path(file, appimage_get_md5(file), 1));
-    appimage_unregister_in_system(file, 0);
-}*/
-
 int help() {
     printf("Commands:\n");
-    printf("install - installs a program\nuninstall - uninstalls a program\nhelp - displays help menu\nlist - lists current apps.\n");
+    printf("install - installs a program\nremove - removes a program\nhelp - displays help menu\nlist - lists current apps.\n");
 }
 
 char *getdir() {
@@ -140,11 +130,4 @@ char *getdir() {
     }
     fclose(fp);
     return dir;
-}
-
-int checkroot() {
-    if(geteuid() != 0) {
-        printf("You need to be root to use this program, as it will edit system wide programs.\n");
-        exit(1); //return 1
-    }
 }

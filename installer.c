@@ -4,16 +4,44 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "src/registeration.h"
-#include "src/betterexec.h"
+#include "src/checkroot.h"
 
 #define MAX_DIR_LEN 512
 
-int main () {
+int install();
+int uninstall();
+char *getdir();
+int help() {
+    printf("Commands:\n");
+    printf("--install\tinstalls Neptune\n");
+    printf("--uninstall\tuninstall Neptune\n");
+}
 
-    if(geteuid() != 0) {
-        printf("You need to be root to use this program, as it will edit system wide programs.\n");
-        return 1;
+int main(int argc, char* argv[]) {
+
+    if(argc == 1) {
+        help();
+        return 0;
     }
+
+    else {
+        if(strcmp(argv[1], "--install\0") == 0) {
+            checkroot();
+            return install();
+        }
+        else if(strcmp(argv[1], "--uninstall\0") == 0) {
+            checkroot();
+            return uninstall();
+        }
+        else {
+            help();
+            return 1;
+        }
+    }
+
+}
+
+int install() {
 
     //Essentially if data dir does not exist, install Neptune
 
@@ -62,7 +90,7 @@ int main () {
     //delete installer
     char cmd[600];
 
-    sprintf(cmd, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer, answer);
+    sprintf(cmd, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer);
     system(cmd);
     registerApp("Neptune");
 
@@ -84,9 +112,34 @@ int main () {
 
     printf("Shortcut nep created. Type \'nep\' to start program anywhere.\n");
     printf("NOTE: Program \"Neptune\" might not be accessible by sudo due to sudo not using the $PATH variable. Command: nep will most likely work everywhere.\n");
-    
-    printf("Deleting installer...\n");
-
-    remove(getenv("APPIMAGE"));
+    printf("To uninstall Neptune use \"sudo ./Neptune.Installer-x86_64.AppImage --uninstall\"\n");
     return 0;
+}
+
+int uninstall() {
+
+    char patha[MAX_DIR_LEN + 10] = "PATH=";
+    strcat(patha, getdir());
+    strcat(patha, ":$PATH");
+
+    unregisterApp("/etc/profile", patha);
+
+    strcpy(patha, getdir());
+    strcat(patha, "/Neptune");
+    remove(patha);
+
+    //Leaves directory in case user has apps there
+
+    system("rm -rf /etc/Neptune");
+}
+
+char *getdir() {
+    char pdir[64] = "/etc/Neptune/dir";
+    static char dir[MAX_DIR_LEN];
+    FILE *fp = fopen(pdir, "r");                 // do not use "rb"
+    while (fgets(dir, sizeof(dir), fp)) {
+        printf("Modifying Files.\n");
+    }
+    fclose(fp);
+    return dir;
 }
