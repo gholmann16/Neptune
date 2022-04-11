@@ -26,8 +26,3 @@ A: AppImages work on any distribution meaning that they are easier for developer
 Q: Why not manually install?
 
 A: Neptune makes installation more convenient, and integrates the apps into the system.
-
-Notes: 
-
-Currently, appimaged is present but not enabled.
-If you previously installed AppImageLauncher on your system, uninstall it if you want to enable appimaged.

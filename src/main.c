@@ -6,18 +6,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <appimage/appimage.h>
 #include "betterexec.h"
-#include "deleteline.h"
-#include "register.h"
+#include "registeration.h"
 
 #define MAX_FILE_LENGTH 128
-#define MAX_DIR_LEN 256
+#define MAX_DIR_LEN 512
 
 int help();
 int list();
 int start(int c);
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
+int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);\
+//int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
+
+char *getfile(char *argv);
+char *getdir();
+int checkroot();
+
 const char *getFileExtension(const char *filename);
 
 int main(int argc, char* argv[]) {
@@ -34,30 +40,22 @@ int main(int argc, char* argv[]) {
             if(!access("/etc/Neptune/list", F_OK ))
                 system("cat /etc/Neptune/list");
         }
-        else if((strcmp(argv[1], "install\0") == 0) || (strcmp(argv[1], "remove\0") == 0)) {
-            
-            if(geteuid() != 0) {
-                printf("You need to be root to use this program, as it will edit system wide programs.\n");
-                return 1;
-            }
-            
-            char pdir[64] = "/etc/Neptune/dir";
-            char dir[MAX_DIR_LEN];
-            FILE *fp = fopen(pdir, "r");                 // do not use "rb"
-            while (fgets(dir, sizeof(dir), fp))
-                printf("Modifying Files.\n");
-            fclose(fp);
-            char file[MAX_FILE_LENGTH];
-            strcpy(file, argv[2]);
-
-            if(strcmp(argv[1], "install\0") == 0) {
-                return install(file, dir);
-            }
-            else if(strcmp(argv[1], "remove\0") == 0) {
-                return delete(file, dir);
-            }
+        else if(strcmp(argv[1], "install\0") == 0) {
+            checkroot();
+            return install(argv[2], getdir());
         }
-        else { 
+        else if(strcmp(argv[1], "uninstall\0") == 0) {
+            checkroot();
+            return delete(argv[2], getdir());
+        }
+        /*else if(strcmp(argv[1], "test\0") == 0) {
+            return test(argv[2], getdir());
+        }*/
+        else if(appimage_get_type(argv[2], 0) != -1) {
+            checkroot();
+            return install(argv[2], getdir());
+        }
+        else {
             help();
             return 4;
         }
@@ -68,13 +66,13 @@ int main(int argc, char* argv[]) {
 
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
-    if (strcmp(getFileExtension(file), "AppImage") != 0) {
+    if (appimage_get_type(file, 0) == -1) {
         printf("This file is not an AppImage.");
         return 2;
     }
-    
+
     char filenamecp[MAX_FILE_LENGTH];
-    char finalfile[MAX_FILE_LENGTH + MAX_DIR_LEN] = "";
+    char finalfile[MAX_DIR_LEN+MAX_FILE_LENGTH];
     strcpy(filenamecp, file);
 
     chown(file, 0, 0);
@@ -88,13 +86,21 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
         *ptr = '\0';
     else 
         file[strlen(file)-9] = '\0';
+    
+    int index;
 
-    strcat(finalfile, dir);
+    ptr = strrchr(file, '/');
+    if (ptr == NULL)
+        ptr = file;
+
+    strcpy(finalfile, dir);
     strcat(finalfile, "/");
-    strcat(finalfile, file);
+    strcat(finalfile, ptr);
 
     sexecl("/bin/mv", filenamecp, finalfile, NULL);
     
+    printf("Registering into system.\n");
+    appimage_register_in_system(finalfile, 0);
     registerApp(file);
 
     return 0;
@@ -102,11 +108,12 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
+    printf("Deregistering from system.\n");
     char cmd[MAX_FILE_LENGTH + MAX_DIR_LEN + 2];
     sprintf(cmd, "%s/%s", dir, file);
     if (remove(cmd) == 0) {
         printf("Deleted successfully.\n");
-        rmln("/etc/Neptune/list", file);
+        unregisterApp("/etc/Neptune/list", file);
     }
     else
         printf("Unable to delete the file.\n");
@@ -114,13 +121,30 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     return 0;
 }
 
+/*int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+    printf("AppImage type: %s", appimage_registered_desktop_file_path(file, appimage_get_md5(file), 1));
+    appimage_unregister_in_system(file, 0);
+}*/
+
 int help() {
     printf("Commands:\n");
-    printf("install - installs a program\nremove - removes a program\nhelp - displays help menu\nlist - lists current apps.\n");
+    printf("install - installs a program\nuninstall - uninstalls a program\nhelp - displays help menu\nlist - lists current apps.\n");
 }
 
-const char *getFileExtension(const char *filename) {
-    const char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename) return "";
-    return dot + 1;
+char *getdir() {
+    char pdir[64] = "/etc/Neptune/dir";
+    static char dir[MAX_DIR_LEN];
+    FILE *fp = fopen(pdir, "r");                 // do not use "rb"
+    while (fgets(dir, sizeof(dir), fp)) {
+        printf("Modifying Files.\n");
+    }
+    fclose(fp);
+    return dir;
+}
+
+int checkroot() {
+    if(geteuid() != 0) {
+        printf("You need to be root to use this program, as it will edit system wide programs.\n");
+        exit(1); //return 1
+    }
 }

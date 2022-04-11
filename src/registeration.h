@@ -5,7 +5,14 @@
 #define FILENAME_SIZE 64
 #define MAX_LINE 256
 
-int rmln(char filename[], char delete_line[])
+int registerApp(char file[]) {
+    FILE *list = fopen("/etc/Neptune/list", "a");
+    
+    fprintf(list, "%s\n", file);
+    fclose(list);
+}
+
+int unregisterApp(char filename[], char delete_line[])
 {
     char temp_filename[FILENAME_SIZE] = "/tmp/temppfile";
     char buffer[MAX_LINE];

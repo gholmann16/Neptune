@@ -3,3 +3,4 @@ repeat.sh
 *.AppImage
 !appimaged-x86_64.AppImage
 todo.md
+/test

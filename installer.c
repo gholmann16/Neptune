@@ -3,10 +3,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-#include "src/register.h"
+#include "src/registeration.h"
 #include "src/betterexec.h"
 
-#define MAX_DIR_LEN 4096
+#define MAX_DIR_LEN 512
 
 int main () {
 
@@ -60,19 +60,23 @@ int main () {
 
     //take packages out and install them
     //delete installer
-    char cmd[8192];
-    char cmd2[8192];
+    char cmd[600];
 
-    sprintf(cmd, "cp %s/appimaged-x86_64.AppImage %s/appimaged", getenv("APPDIR"), answer);
+    sprintf(cmd, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer, answer);
     system(cmd);
-    sprintf(cmd2, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer);
-    system(cmd2);
-
-    registerApp("appimaged");
     registerApp("Neptune");
 
+    char resting0[MAX_DIR_LEN + 64];
+    strcpy(resting0, answer);
+    strcat(resting0, "/Neptune.home/");
+
+    mkdir(resting0, 0755);
+    strcat(resting0,".local");
+
+    sexecl("/bin/ln", "-s", "/usr/", resting0);
+
     char resting[MAX_DIR_LEN + 8];
-    strcat(resting, answer);
+    strcpy(resting, answer);
     strcat(resting, "/Neptune");
     
     sexecl("/bin/ln", "-s", resting, "nep");
