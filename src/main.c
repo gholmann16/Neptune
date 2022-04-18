@@ -15,13 +15,10 @@
 
 int help();
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);\
+int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 //int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 
-char *getfile(char *argv);
 char *getdir();
-int checkroot();
-
 const char *getFileExtension(const char *filename);
 
 int main(int argc, char* argv[]) {
@@ -79,7 +76,7 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     ptr = strchr(file, '-');
     if (ptr != NULL)
         *ptr = '\0';
-    else 
+    else if(strcmp(getFileExtension(file), "AppImage") == 0)
         file[strlen(file)-9] = '\0';
     
     int index;
@@ -104,6 +101,7 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
     printf("Deregistering from system.\n");
+    appimage_unregister_in_system(file, 0);
     char cmd[MAX_FILE_LENGTH + MAX_DIR_LEN + 2];
     sprintf(cmd, "%s/%s", dir, file);
     if (remove(cmd) == 0) {
@@ -131,3 +129,10 @@ char *getdir() {
     fclose(fp);
     return dir;
 }
+
+const char *getFileExtension(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return "";
+    return dot + 1;
+}
+

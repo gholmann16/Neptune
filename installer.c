@@ -48,7 +48,7 @@ int install() {
     mkdir("/etc/Neptune", 0755);
     FILE *dirFile = fopen("/etc/Neptune/dir", "w");
 
-    char patha[MAX_DIR_LEN + 10] = "PATH=";
+    char patha[MAX_DIR_LEN + 32] = "append_path '";
 
     printf("Directory prefrence hast not yet been set.\n");
 
@@ -80,7 +80,7 @@ int install() {
 
     fclose(dirFile);
 
-    strcat(patha, ":$PATH");
+    strcat(patha, "'");
 
     FILE *path = fopen("/etc/profile", "a");
     fprintf(path, "%s\n", patha);
@@ -118,9 +118,9 @@ int install() {
 
 int uninstall() {
 
-    char patha[MAX_DIR_LEN + 10] = "PATH=";
+    char patha[MAX_DIR_LEN + 32] = "append_path '";
     strcat(patha, getdir());
-    strcat(patha, ":$PATH");
+    strcat(patha, "'");
 
     unregisterApp("/etc/profile", patha);
 
