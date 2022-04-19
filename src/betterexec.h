@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 #include <stdio.h>
 
-int sexecl(char *arg1, char *arg2, char *arg3, char *arg4) {
+int sexecl(const char *arg1, const char *arg2, const char *arg3, const char *arg4) {
     pid_t p=fork();
     if(p==0)
     {

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "src/registeration.h"
 #include "src/checkroot.h"
+#include "src/extra.h"
 
 #define MAX_DIR_LEN 512
 
@@ -48,7 +49,7 @@ int install() {
     mkdir("/etc/Neptune", 0755);
     FILE *dirFile = fopen("/etc/Neptune/dir", "w");
 
-    char patha[MAX_DIR_LEN + 32] = "append_path '";
+    char patha[MAX_DIR_LEN + 10] = "export PATH=";
 
     printf("Directory prefrence hast not yet been set.\n");
 
@@ -80,19 +81,11 @@ int install() {
 
     fclose(dirFile);
 
-    strcat(patha, "'");
+    strcat(patha, ":$PATH");
 
     FILE *path = fopen("/etc/profile", "a");
     fprintf(path, "%s\n", patha);
     fclose(path);
-
-    //take packages out and install them
-    //delete installer
-    char cmd[600];
-
-    sprintf(cmd, "cp %s/Neptune-x86_64.AppImage %s/Neptune", getenv("APPDIR"), answer);
-    system(cmd);
-    registerApp("Neptune");
 
     char resting0[MAX_DIR_LEN + 64];
     strcpy(resting0, answer);
@@ -102,6 +95,11 @@ int install() {
     strcat(resting0,".local");
 
     sexecl("/bin/ln", "-s", "/usr/", resting0);
+
+    //take packages out and install them
+    //delete installer
+    sexecl("/bin/cp", combine(getenv("APPDIR"), "/Neptune-x86_64.AppImage", 0), combine(answer, "/Neptune", 0), NULL);
+    sexecl("/bin/cp", combine(getenv("APPDIR"), "/appimageupdatetool-x86_64.AppImage", 0), combine(answer, "/appimageupdatetool", 0), NULL);
 
     char resting[MAX_DIR_LEN + 8];
     strcpy(resting, answer);
@@ -113,14 +111,15 @@ int install() {
     printf("Shortcut nep created. Type \'nep\' to start program anywhere.\n");
     printf("NOTE: Program \"Neptune\" might not be accessible by sudo due to sudo not using the $PATH variable. Command: nep will most likely work everywhere.\n");
     printf("To uninstall Neptune use \"sudo ./Neptune.Installer-x86_64.AppImage --uninstall\"\n");
+    
     return 0;
 }
 
 int uninstall() {
 
-    char patha[MAX_DIR_LEN + 32] = "append_path '";
+    char patha[MAX_DIR_LEN + 10] = "export PATH=";
     strcat(patha, getdir());
-    strcat(patha, "'");
+    strcat(patha, ":$PATH");
 
     unregisterApp("/etc/profile", patha);
 

@@ -9,6 +9,7 @@
 #include <appimage/appimage.h>
 #include "registeration.h"
 #include "checkroot.h"
+#include "extra.h"
 
 #define MAX_FILE_LENGTH 128
 #define MAX_DIR_LEN 512
@@ -16,6 +17,7 @@
 int help();
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
+int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 //int test(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 
 char *getdir();
@@ -42,6 +44,10 @@ int main(int argc, char* argv[]) {
         else if(strcmp(argv[1], "remove\0") == 0) {
             checkroot();
             return delete(argv[2], getdir());
+        }
+        else if(strcmp(argv[1], "update\0") == 0) {
+            checkroot();
+            return update(argv[2], getdir());
         }
         else if(appimage_get_type(argv[2], 0) != -1) {
             checkroot();
@@ -112,6 +118,19 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
         printf("Unable to delete the file.\n");
 
     return 0;
+}
+
+int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+
+    if (appimage_get_type(combine(dir, file, 1), 0) == -1) {
+        printf("This file is not an AppImage.");
+        return 2;
+    }
+
+    const char *old = combine(file, ".zs-old", 0);
+    sexecl(combine(dir, "/appimageupdatetool", 0), "-O", combine(dir, file, 1), NULL);
+    if( access(combine(dir, old, 1), F_OK ) == 0 ) 
+        sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
 }
 
 int help() {
