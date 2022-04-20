@@ -1,0 +1,58 @@
+Parallel mksquashfs: Using 12 processors
+Creating 4.0 filesystem on Neptune-x86_64.AppImage, block size 131072.
+[===================================================================|] 5/5 100%
+
+Exportable Squashfs 4.0 filesystem, gzip compressed, data block size 131072
+	compressed data, compressed metadata, compressed fragments,
+	compressed xattrs, compressed ids
+	duplicates are removed
+Filesystem size 95.43 Kbytes (0.09 Mbytes)
+	85.86% of uncompressed filesystem size (111.15 Kbytes)
+Inode table size 92 bytes (0.09 Kbytes)
+	47.42% of uncompressed inode table size (194 bytes)
+Directory table size 84 bytes (0.08 Kbytes)
+	84.00% of uncompressed directory table size (100 bytes)
+Number of duplicate files found 0
+Number of inodes 6
+Number of files 5
+Number of fragments 1
+Number of symbolic links  0
+Number of device nodes 0
+Number of fifo nodes 0
+Number of socket nodes 0
+Number of directories 1
+Number of ids (unique uids + gids) 1
+Number of uids 1
+	root (0)
+Number of gids 1
+	root (0)
+/home/gholm/Coding/c/Neptune/Neptune3/src/Neptune.AppDir should be packaged as Neptune-x86_64.AppImage
+Parallel mksquashfs: Using 12 processors
+Creating 4.0 filesystem on Neptune.Installer-x86_64.AppImage, block size 131072.
+[===================================================================|] 8/8 100%
+
+Exportable Squashfs 4.0 filesystem, gzip compressed, data block size 131072
+	compressed data, compressed metadata, compressed fragments,
+	compressed xattrs, compressed ids
+	duplicates are removed
+Filesystem size 264.71 Kbytes (0.26 Mbytes)
+	65.69% of uncompressed filesystem size (402.97 Kbytes)
+Inode table size 122 bytes (0.12 Kbytes)
+	51.26% of uncompressed inode table size (238 bytes)
+Directory table size 132 bytes (0.13 Kbytes)
+	73.74% of uncompressed directory table size (179 bytes)
+Number of duplicate files found 0
+Number of inodes 7
+Number of files 6
+Number of fragments 1
+Number of symbolic links  0
+Number of device nodes 0
+Number of fifo nodes 0
+Number of socket nodes 0
+Number of directories 1
+Number of ids (unique uids + gids) 1
+Number of uids 1
+	root (0)
+Number of gids 1
+	root (0)
+/home/gholm/Coding/c/Neptune/Neptune3/Neptune.Installer.AppDir should be packaged as Neptune.Installer-x86_64.AppImage
