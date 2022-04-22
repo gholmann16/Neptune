@@ -25,17 +25,15 @@ const char *getFileExtension(const char *filename);
 
 int main(int argc, char* argv[]) {
 
-    if(argc == 1) {
-        help();
-        return 0;
-    }
+    if(argc == 1) 
+        return help();
 
     else {
         if(strcmp(argv[1], "help\0") == 0) 
-            help();
+            return help();
         else if(strcmp(argv[1], "list\0") == 0)  {
             if(!access("/etc/Neptune/list", F_OK ))
-                return system("cat /etc/Neptune/list");
+                return sexecl("/bin/cat", "/etc/Neptune/list", NULL, NULL);
         }
         else if(strcmp(argv[1], "install\0") == 0) {
             checkroot();
@@ -53,9 +51,14 @@ int main(int argc, char* argv[]) {
             }
             return update(argv[2], getdir());
         }
-        else if(appimage_get_type(argv[2], 0) != -1) {
+        else if(strcmp(argv[1], "find\0") == 0) {
+            char cmd[256];
+            sprintf(cmd, "ls /etc/Neptune/data | grep \"^%s\"", argv[2]);
+            return system(cmd);
+        }
+        else if(appimage_get_type(argv[1], 0) != -1) {
             checkroot();
-            return install(argv[2], getdir());
+            return install(argv[1], getdir());
         }
         else {
             help();
@@ -74,10 +77,19 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
         sprintf(cmd, "/bin/wget -i %s -q --show-progress -O %s", combine("/etc/Neptune/data/", file, 0), combine("/tmp/", file, 0));
         system(cmd);
         if(!access(combine("/tmp/", file, 0), F_OK )) {
-            return integrate(combine("/tmp/", file, 0), dir);
+            struct stat st;
+            stat(combine("/tmp/", file, 0), &st);
+            if(st.st_size > 0)
+                return integrate(combine("/tmp/", file, 0), dir);
+            else {
+                printf("File download failed.\n");
+                remove(combine("/tmp/", file, 0));
+                printf("Contents of %s database file:\n", file);
+                return sexecl("/bin/cat", combine("/etc/Neptune/data/", file, 0), NULL, NULL);
+            }
         }
         else {
-            printf("File download fail.\n");
+            printf("File download failed.\n");
             return 6;
         }
     }
@@ -91,8 +103,11 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     
+    if (appimage_is_registered_in_system(file))
+        appimage_unregister_in_system(file, 0); //in case you uninstall and reinstall Neptune
+
     if (appimage_get_type(file, 0) == -1) {
-        printf("This file is not an AppImage.");
+        printf("This file is not an AppImage.\n");
         return 2;
     }
 
@@ -126,7 +141,7 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     
     printf("Registering into system.\n");
     appimage_register_in_system(finalfile, 0);
-    registerApp(file);
+    registerApp(ptr);
 
     return 0;
 }
@@ -156,15 +171,18 @@ int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     sexecl(combine(dir, "/appimageupdatetool", 0), "-O", combine(dir, file, 1), NULL);
     if( access(combine(dir, old, 1), F_OK ) == 0 ) 
         sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
+    return 0;
 }
 
 int help() {
     printf("Commands:\n");
     printf("install - installs a program\n");
-    printf("update - updates an appimage if availible.\n");
+    printf("update - updates an appimage if availible. If run with no arguments it updates Neptune's download database\n");
     printf("remove - removes a program\n");
-    printf("help - displays help menu\n");
+    printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
+    printf("help - displays help menu\n");
+    return 0;
 }
 
 char *getdir() {
