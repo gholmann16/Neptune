@@ -47,6 +47,7 @@ int install() {
     //Essentially if data dir does not exist, install Neptune
 
     mkdir("/etc/Neptune", 0755);
+    mkdir("/etc/Neptune/permissions", 0755);
     FILE *dirFile = fopen("/etc/Neptune/dir", "w");
 
     char patha[MAX_DIR_LEN + 10] = "export PATH=";
@@ -83,7 +84,7 @@ int install() {
 
     strcat(patha, ":$PATH");
 
-    FILE *path = fopen("/etc/profile", "a");
+    FILE *path = fopen("/etc/profile.d/neptune.sh", "w");
     fprintf(path, "%s\n", patha);
     fclose(path);
 
@@ -99,7 +100,6 @@ int install() {
     //take packages out and install them
     //delete installer
     sexecl("/bin/cp", combine(getenv("APPDIR"), "/Neptune-x86_64.AppImage", 0), combine(answer, "/Neptune", 0), NULL);
-    sexecl("/bin/cp", combine(getenv("APPDIR"), "/appimageupdatetool-x86_64.AppImage", 0), combine(answer, "/appimageupdatetool", 0), NULL);
 
     char resting[MAX_DIR_LEN + 8];
     strcpy(resting, answer);
@@ -117,12 +117,9 @@ int install() {
 
 int uninstall() {
 
-    char patha[MAX_DIR_LEN + 10] = "export PATH=";
-    strcat(patha, getdir());
-    strcat(patha, ":$PATH");
+    remove("/etc/profile.d/neptune.sh");
 
-    unregisterApp("/etc/profile", patha);
-
+    char patha[MAX_DIR_LEN + 10];
     strcpy(patha, getdir());
     strcat(patha, "/Neptune");
     remove(patha);

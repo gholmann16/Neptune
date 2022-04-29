@@ -19,6 +19,7 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
+int run(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 
 char *getdir();
 const char *getFileExtension(const char *filename);
@@ -56,6 +57,8 @@ int main(int argc, char* argv[]) {
             sprintf(cmd, "ls /etc/Neptune/data | grep \"^%s\"", argv[2]);
             return system(cmd);
         }
+        else if(strcmp(argv[1], "run\0") == 0) 
+            return run(argv[2], getdir());
         else if(appimage_get_type(argv[1], 0) != -1) {
             checkroot();
             return install(argv[1], getdir());
@@ -70,11 +73,11 @@ int main(int argc, char* argv[]) {
 }
 
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-    if(!access(file, F_OK ))
-        return integrate(file, dir);
+    if(!access(combine(getenv("OWD"), file, 1), F_OK ))
+        return integrate(combine(getenv("OWD"), file, 1), dir);
     else if(!access(combine("/etc/Neptune/data/", file, 0), F_OK )) {
         char cmd[2048];
-        sprintf(cmd, "/bin/wget -i %s -q --show-progress -O %s", combine("/etc/Neptune/data/", file, 0), combine("/tmp/", file, 0));
+        sprintf(cmd, "/usr/bin/wget -i %s -q --show-progress -O %s", combine("/etc/Neptune/data/", file, 0), combine("/tmp/", file, 0));
         system(cmd);
         if(!access(combine("/tmp/", file, 0), F_OK )) {
             struct stat st;
@@ -93,11 +96,14 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
             return 6;
         }
     }
-    else if(strcmp(getFileExtension(file), "AppImage") == 0) 
-        printf("No file of that name found.\n");
+    else if(strcmp(getFileExtension(file), "AppImage") == 0) {
+        printf("No file of that name (%s) found.\n", file);
+        return 5;
+    }
     else {
         printf("No program found in database. ");
         printf("If you have not updated it in a while or this is your accessing it, run sudo nep update to update your local program database.\n");
+        return 0;
     }
 }
 
@@ -130,6 +136,7 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     int index;
 
     ptr = strrchr(file, '/');
+    ptr = ptr + 1;
     if (ptr == NULL)
         ptr = file;
 
@@ -150,10 +157,9 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
     printf("Deregistering from system.\n");
     appimage_unregister_in_system(combine(dir, file, 1), 0);
-    if (remove(combine(dir, file, 1)) == 0) {
+    unregisterApp("/etc/Neptune/list", file);
+    if (remove(combine(dir, file, 1)) == 0)
         printf("Deleted successfully.\n");
-        unregisterApp("/etc/Neptune/list", file);
-    }
     else
         printf("Unable to delete the file.\n");
 
@@ -168,10 +174,16 @@ int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     }
 
     const char *old = combine(file, ".zs-old", 0);
-    sexecl(combine(dir, "/appimageupdatetool", 0), "-O", combine(dir, file, 1), NULL);
+    sexecl("appimageupdatetool-x86_64.AppImage", "-O", combine(dir, file, 1), NULL);
     if( access(combine(dir, old, 1), F_OK ) == 0 ) 
         sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
     return 0;
+}
+
+int run(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+    char cmd[2048];
+    sprintf(cmd, "aisap-0.5.9-alpha-x86_64.AppImage --level 2 --add-device dri --add-socket x11 --add-socket wayland --add-socket pulseaudio --add-socket network --add-file xdg-download:rw %s", file);
+    return system(cmd);
 }
 
 int help() {

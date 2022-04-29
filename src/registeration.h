@@ -51,7 +51,39 @@ int unregisterApp(char filename[], char delete_line[])
 
     // delete the original file, give the temp file the name of the original file
     remove(filename);
-    sexecl("/usr/bin/mv", "/tmp/temppfile", filename, NULL);
+    rename("/tmp/temppfile", filename);
 
+    return 0;
+}
+
+int check_if_registered(char line[]) {
+
+    char buffer[MAX_LINE];
+
+    FILE *file;
+    file = fopen("/etc/Neptune/list", "r");
+    strcat(line, "\n");
+
+    if (file == NULL)
+    {
+        printf("Error opening file(s).\n");
+        return 0;
+    }
+
+    bool keep_reading = true;
+    do {
+
+        // stores the next line from the file into the buffer        
+        fgets(buffer, MAX_LINE, file);
+
+        // if we've reached the end of the file, stop reading from the file
+        if (feof(file)) keep_reading = false;
+        else if (strcmp(buffer, line) == 0) {
+            return 1;
+        }
+
+    } while (keep_reading);
+
+    fclose(file);
     return 0;
 }
