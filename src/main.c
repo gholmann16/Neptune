@@ -7,9 +7,11 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <appimage/appimage.h>
-#include "registeration.h"
-#include "checkroot.h"
+#include "betterexec.h"
+#include "registeration.h" //depends on betterexec
 #include "extra.h"
+#include "system.h" //depends on betterexec and extra
+#include "checkroot.h"
 
 #define MAX_FILE_LENGTH 128
 #define MAX_DIR_LEN 512
@@ -35,6 +37,8 @@ int main(int argc, char* argv[]) {
         else if(strcmp(argv[1], "list\0") == 0)  {
             if(!access("/etc/Neptune/list", F_OK ))
                 return sexecl("/bin/cat", "/etc/Neptune/list", NULL, NULL);
+            else
+                return 6;
         }
         else if(strcmp(argv[1], "install\0") == 0) {
             checkroot();
@@ -57,12 +61,16 @@ int main(int argc, char* argv[]) {
             sprintf(cmd, "ls /etc/Neptune/data | grep \"^%s\"", argv[2]);
             return system(cmd);
         }
-        else if(strcmp(argv[1], "run\0") == 0) 
-            return run(argv[2], getdir());
+        //else if(strcmp(argv[1], "run\0") == 0) 
+            //return run(argv[2], getdir());
         else if(appimage_get_type(argv[1], 0) != -1) {
             checkroot();
             return install(argv[1], getdir());
         }
+        else if(strcmp(argv[1], "--install") == 0)
+            return sexecl(combine(getenv("APPDIR"), "/usr/bin/installer", 0), "--install", NULL, NULL);
+        else if(strcmp(argv[1], "--uninstall") == 0)
+            return execl(combine(getenv("APPDIR"), "/usr/bin/installer", 0), getenv("APPIMAGE"), "--uninstall", NULL);
         else {
             help();
             return 4;
@@ -110,7 +118,7 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     
     if (appimage_is_registered_in_system(file))
-        appimage_unregister_in_system(file, 0); //in case you uninstall and reinstall Neptune
+        system_wide_unregistration(file); //in case you uninstall and reinstall Neptune
 
     if (appimage_get_type(file, 0) == -1) {
         printf("This file is not an AppImage.\n");
@@ -147,22 +155,22 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     sexecl("/bin/mv", filenamecp, finalfile, NULL);
     
     printf("Registering into system.\n");
-    appimage_register_in_system(finalfile, 0);
+    system_wide_registration(finalfile);
     registerApp(ptr);
 
     return 0;
 }
 
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-
+    char newfile[MAX_DIR_LEN+MAX_FILE_LENGTH+1];
+    strcat(newfile, combine(dir, file, 1));
     printf("Deregistering from system.\n");
-    appimage_unregister_in_system(combine(dir, file, 1), 0);
+    system_wide_unregistration(newfile);
     unregisterApp("/etc/Neptune/list", file);
-    if (remove(combine(dir, file, 1)) == 0)
-        printf("Deleted successfully.\n");
+    if (remove(newfile) == 0)
+        printf("Success\n");
     else
-        printf("Unable to delete the file.\n");
-
+        perror("Unable to delete the file\n");
     return 0;
 }
 
@@ -174,7 +182,7 @@ int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     }
 
     const char *old = combine(file, ".zs-old", 0);
-    sexecl("appimageupdatetool-x86_64.AppImage", "-O", combine(dir, file, 1), NULL);
+    sexecl(combine(getenv("APPDIR"), "/usr/bin/appimageupdatetool-x86_64.AppImage", 0), "-O", combine(dir, file, 1), NULL);
     if( access(combine(dir, old, 1), F_OK ) == 0 ) 
         sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
     return 0;
@@ -194,16 +202,21 @@ int help() {
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
     printf("help - displays help menu\n");
+    printf("--install - installs Neptune\n");
+    printf("--uninstall - uninstalls Neptune\n");
     return 0;
 }
 
 char *getdir() {
+
+    if(access("/etc/Neptune/dir", F_OK ))
+        printf("You have not selected your directory preferences yet. Run nep --install to install Neptune to your system");
+
     char pdir[64] = "/etc/Neptune/dir";
     static char dir[MAX_DIR_LEN];
-    FILE *fp = fopen(pdir, "r");                 // do not use "rb"
-    while (fgets(dir, sizeof(dir), fp)) {
-        printf("Modifying Files.\n");
-    }
+    FILE *fp = fopen(pdir, "r");
+    while (fgets(dir, sizeof(dir), fp)) 
+        ;
     fclose(fp);
     return dir;
 }

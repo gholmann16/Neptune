@@ -3,9 +3,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-#include "src/registeration.h"
-#include "src/checkroot.h"
-#include "src/extra.h"
+#include "registeration.h"
+#include "checkroot.h"
+#include "extra.h"
 
 #define MAX_DIR_LEN 512
 
@@ -27,12 +27,18 @@ int main(int argc, char* argv[]) {
 
     else {
         if(strcmp(argv[1], "--install\0") == 0) {
-            checkroot();
+            if(geteuid() != 0) {
+                printf("You need to be root to use this program, as it will edit system wide programs.\n");
+                exit(1); //return 1
+            }
             return install();
         }
         else if(strcmp(argv[1], "--uninstall\0") == 0) {
-            checkroot();
-            return uninstall();
+            if(geteuid() != 0) {
+                printf("You need to be root to use this program, as it will edit system wide programs.\n");
+                exit(1); //return 1
+            }
+            return uninstall(argv);
         }
         else {
             help();
@@ -47,7 +53,6 @@ int install() {
     //Essentially if data dir does not exist, install Neptune
 
     mkdir("/etc/Neptune", 0755);
-    mkdir("/etc/Neptune/permissions", 0755);
     FILE *dirFile = fopen("/etc/Neptune/dir", "w");
 
     char patha[MAX_DIR_LEN + 10] = "export PATH=";
@@ -88,41 +93,16 @@ int install() {
     fprintf(path, "%s\n", patha);
     fclose(path);
 
-    char resting0[MAX_DIR_LEN + 64];
-    strcpy(resting0, answer);
-    strcat(resting0, "/Neptune.home/");
-
-    mkdir(resting0, 0755);
-    strcat(resting0,".local");
-
-    sexecl("/bin/ln", "-s", "/usr/", resting0);
-
-    //take packages out and install them
-    //delete installer
-    sexecl("/bin/cp", combine(getenv("APPDIR"), "/Neptune-x86_64.AppImage", 0), combine(answer, "/Neptune", 0), NULL);
-
-    char resting[MAX_DIR_LEN + 8];
-    strcpy(resting, answer);
-    strcat(resting, "/Neptune");
-    
-    sexecl("/bin/ln", "-s", resting, "nep");
-    sexecl("/bin/mv", "nep", "/usr/local/bin", NULL);
-
-    printf("Shortcut nep created. Type \'nep\' to start program anywhere.\n");
-    printf("NOTE: Program \"Neptune\" might not be accessible by sudo due to sudo not using the $PATH variable. Command: nep will most likely work everywhere.\n");
-    printf("To uninstall Neptune use \"sudo ./Neptune.Installer-x86_64.AppImage --uninstall\"\n");
+    printf("To uninstall Neptune use \"sudo nep --uninstall\"\n");
     
     return 0;
 }
 
-int uninstall() {
+int uninstall(char* argv[]) {
 
     remove("/etc/profile.d/neptune.sh");
-
-    char patha[MAX_DIR_LEN + 10];
-    strcpy(patha, getdir());
-    strcat(patha, "/Neptune");
-    remove(patha);
+    printf("%s", argv[0]);
+    remove(argv[0]);
 
     //Leaves directory in case user has apps there
 
