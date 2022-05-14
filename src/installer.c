@@ -12,6 +12,7 @@
 int install();
 int uninstall();
 char *getdir();
+int defineDir();
 int help() {
     printf("Commands:\n");
     printf("--install\tinstalls Neptune\n");
@@ -53,42 +54,12 @@ int install() {
     //Essentially if data dir does not exist, install Neptune
 
     mkdir("/etc/Neptune", 0755);
-    FILE *dirFile = fopen("/etc/Neptune/dir", "w");
+    defineDir("/etc/Neptune/dir", "/Applications", "applications installed by this program", "/");
+    defineDir("/etc/Neptune/userdata", "~/.AppImageData", "data from AppImages?", "~/");
 
     char patha[MAX_DIR_LEN + 10] = "export PATH=";
-
-    printf("Directory prefrence hast not yet been set.\n");
-
-    int invalid = 1;
-    char answer[MAX_DIR_LEN];
-    while(invalid) {
-        printf("Where would you like to store applications installed by this program? Default is /Applications/\n");
-        fgets(answer, sizeof answer, stdin);
-        if (answer[0] == '\n') {
-            printf("Storing to /Applications/ directory.\n");
-            mkdir("/Applications", 0755);
-            fprintf(dirFile, "/Applications");
-            strcat(patha, "/Applications");
-            strncpy(answer, "/Applications", MAX_DIR_LEN);
-            invalid = 0;
-        }
-        else if (answer[0] == '/') {
-            answer[strcspn(answer, "\n")] = 0;
-            printf("Valid directory dected, saving prefrences.\n");
-            mkdir(answer, 0755);
-            fprintf(dirFile, "%s", answer);
-            strcat(patha, answer);
-            invalid = 0;
-        }
-        else {
-            printf("Invalid directory, try again.\n");
-        }
-    }
-
-    fclose(dirFile);
-
+    strcat(patha, getdir());
     strcat(patha, ":$PATH");
-
     FILE *path = fopen("/etc/profile.d/neptune.sh", "w");
     fprintf(path, "%s\n", patha);
     fclose(path);
@@ -118,4 +89,27 @@ char *getdir() {
     }
     fclose(fp);
     return dir;
+}
+
+int defineDir(char *file, char *defo, char *message, char *starter) {
+
+    FILE *dirFile = fopen(file, "w");
+    char answer[MAX_DIR_LEN];
+
+    printf("Where would you like to store %s Default is %s\n%s", message, defo, starter);
+    fgets(answer, sizeof answer, stdin);
+    if (answer[0] == '\n') {
+        printf("Storing to %s directory.\n", defo);
+        mkdir(defo, 0755);
+        fprintf(dirFile, "%s", defo);
+    }
+    else {
+        answer[strcspn(answer, "\n")] = 0;
+        printf("Valid directory dected, saving prefrences.\n");
+        mkdir(combine(starter, answer, 0), 0755);
+        fprintf(dirFile, "%s", combine(starter, answer, 0));
+    }
+
+    fclose(dirFile);
+    return 0;
 }

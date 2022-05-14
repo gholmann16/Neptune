@@ -2,8 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define FILENAME_SIZE 64
-#define MAX_LINE 256
+#define MAX_PROGRAM_NAME 256
 
 int registerApp(char file[]) {
     FILE *list = fopen("/etc/Neptune/list", "a");
@@ -14,8 +13,8 @@ int registerApp(char file[]) {
 
 int unregisterApp(char filename[], char delete_line[])
 {
-    char temp_filename[FILENAME_SIZE] = "/tmp/temppfile";
-    char buffer[MAX_LINE];
+    char temp_filename[64] = "/tmp/temppfile";
+    char buffer[MAX_PROGRAM_NAME];
     strcat(delete_line, "\n");
 
     FILE *file, *temp;
@@ -34,7 +33,7 @@ int unregisterApp(char filename[], char delete_line[])
     do {
 
         // stores the next line from the file into the buffer        
-        fgets(buffer, MAX_LINE, file);
+        fgets(buffer, MAX_PROGRAM_NAME, file);
 
         // if we've reached the end of the file, stop reading from the file
         if (feof(file)) keep_reading = false;
@@ -57,7 +56,7 @@ int unregisterApp(char filename[], char delete_line[])
 
 int check_if_registered(char line[]) {
 
-    char buffer[MAX_LINE];
+    char buffer[MAX_PROGRAM_NAME];
 
     FILE *file;
     file = fopen("/etc/Neptune/list", "r");
@@ -73,7 +72,7 @@ int check_if_registered(char line[]) {
     do {
 
         // stores the next line from the file into the buffer        
-        fgets(buffer, MAX_LINE, file);
+        fgets(buffer, MAX_PROGRAM_NAME, file);
 
         // if we've reached the end of the file, stop reading from the file
         if (feof(file)) keep_reading = false;

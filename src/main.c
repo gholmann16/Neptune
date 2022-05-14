@@ -7,14 +7,16 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <appimage/appimage.h>
+
+#define MAX_DIR_LEN 512
+#define MAX_FILE_LENGTH 128
+
 #include "betterexec.h"
 #include "registeration.h" //depends on betterexec
 #include "extra.h"
 #include "system.h" //depends on betterexec and extra
 #include "checkroot.h"
-
-#define MAX_FILE_LENGTH 128
-#define MAX_DIR_LEN 512
+#include "scrape.h"
 
 int help();
 int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
@@ -23,7 +25,6 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int run(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 
-char *getdir();
 const char *getFileExtension(const char *filename);
 
 int main(int argc, char* argv[]) {
@@ -42,11 +43,11 @@ int main(int argc, char* argv[]) {
         }
         else if(strcmp(argv[1], "install\0") == 0) {
             checkroot();
-            return install(argv[2], getdir());
+            return install(argv[2], getdir("/etc/Neptune/dir"));
         }
         else if(strcmp(argv[1], "remove\0") == 0) {
             checkroot();
-            return delete(argv[2], getdir());
+            return delete(argv[2], getdir("/etc/Neptune/dir"));
         }
         else if(strcmp(argv[1], "update\0") == 0) {
             checkroot();
@@ -54,18 +55,18 @@ int main(int argc, char* argv[]) {
                 return sexecl(combine(getenv("APPDIR"), "git.sh", 1), NULL, NULL, NULL);
                 //git pull from appimage.github.io and download data folder
             }
-            return update(argv[2], getdir());
+            return update(argv[2], getdir("/etc/Neptune/dir"));
         }
         else if(strcmp(argv[1], "find\0") == 0) {
             char cmd[256];
             sprintf(cmd, "ls /etc/Neptune/data | grep \"^%s\"", argv[2]);
             return system(cmd);
         }
-        //else if(strcmp(argv[1], "run\0") == 0) 
-            //return run(argv[2], getdir());
+        else if(strcmp(argv[1], "run\0") == 0) 
+            return run(argv[2], getdir("/etc/Neptune/dir"));
         else if(appimage_get_type(argv[1], 0) != -1) {
             checkroot();
-            return install(argv[1], getdir());
+            return install(argv[1], getdir("/etc/Neptune/dir"));
         }
         else if(strcmp(argv[1], "--install") == 0)
             return sexecl(combine(getenv("APPDIR"), "/usr/bin/installer", 0), "--install", NULL, NULL);
@@ -116,9 +117,6 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 }
 
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-    
-    if (appimage_is_registered_in_system(file))
-        system_wide_unregistration(file); //in case you uninstall and reinstall Neptune
 
     if (appimage_get_type(file, 0) == -1) {
         printf("This file is not an AppImage.\n");
@@ -155,7 +153,7 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     sexecl("/bin/mv", filenamecp, finalfile, NULL);
     
     printf("Registering into system.\n");
-    system_wide_registration(finalfile);
+    system_wide_registration(finalfile, ptr);
     registerApp(ptr);
 
     return 0;
@@ -165,7 +163,7 @@ int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     char newfile[MAX_DIR_LEN+MAX_FILE_LENGTH+1];
     strcat(newfile, combine(dir, file, 1));
     printf("Deregistering from system.\n");
-    system_wide_unregistration(newfile);
+    system_wide_unregistration(newfile, NULL);
     unregisterApp("/etc/Neptune/list", file);
     if (remove(newfile) == 0)
         printf("Success\n");
@@ -189,8 +187,13 @@ int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 }
 
 int run(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+    
+    char *location = combine(getdir("/etc/Neptune/userdata"), file, 1);
+    
     char cmd[2048];
-    sprintf(cmd, "aisap-0.5.9-alpha-x86_64.AppImage --level 2 --add-device dri --add-socket x11 --add-socket wayland --add-socket pulseaudio --add-socket network --add-file xdg-download:rw %s", file);
+    sprintf(cmd, "aisap-0.6.4-alpha-x86_64.AppImage --profile %s/metadata/permissions.ini --data-dir %s/apphome %s/appcopy/%s", location, location, location, file);
+    free(location); // we stan proper memory management 
+
     return system(cmd);
 }
 
@@ -205,20 +208,6 @@ int help() {
     printf("--install - installs Neptune\n");
     printf("--uninstall - uninstalls Neptune\n");
     return 0;
-}
-
-char *getdir() {
-
-    if(access("/etc/Neptune/dir", F_OK ))
-        printf("You have not selected your directory preferences yet. Run nep --install to install Neptune to your system");
-
-    char pdir[64] = "/etc/Neptune/dir";
-    static char dir[MAX_DIR_LEN];
-    FILE *fp = fopen(pdir, "r");
-    while (fgets(dir, sizeof(dir), fp)) 
-        ;
-    fclose(fp);
-    return dir;
 }
 
 const char *getFileExtension(const char *filename) {
