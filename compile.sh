@@ -16,7 +16,7 @@ else
     chmod +x src/Neptune.AppDir/usr/bin/aisap-0.6.4-alpha-x86_64.AppImage
 fi
 gcc src/AppRun.c -o src/Neptune.AppDir/AppRun -Wno-format-truncation
-gcc src/main.c -lappimage -o src/Neptune.AppDir/usr/bin/Neptune
+gcc src/main.c -g -lappimage -o src/Neptune.AppDir/usr/bin/Neptune
 gcc src/installer.c -o src/Neptune.AppDir/usr/bin/installer
 gcc src/libregister.c -lappimage -o src/Neptune.AppDir/usr/bin/integrator
 appimagetool src/Neptune.AppDir/ > build.output

@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         
         appimage_register_in_system(argv[2], 0);
     
-        char* localdata = getdir("/etc/Neptune/userdata");
+        char* localdata = getdir("/etc/neptune/userdata");
         memmove(localdata, localdata+2, strlen(localdata));  //remove ~/
         char* full;
         sprintf(full, "%s/%s", getenv("HOME"), localdata);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
             fprintf(perms, "Sockets=x11;wayland;pulseaudio;network;\n");
             fclose(perms);
 
-            // link(combine("appcopy/", argv[3], 0), combine(getdir("/etc/Neptune/dir"), argv[3], 1));
+            // link(combine("appcopy/", argv[3], 0), combine(getdir("/etc/neptune/dir"), argv[3], 1));
             // the link is to make it easy to transfer these appimages
             // might implement some more functionality after I make sandboxing mandatory
             return 0;

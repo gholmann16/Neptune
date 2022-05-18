@@ -1,5 +1,4 @@
 #include <pwd.h>
-#include <ctype.h>
 
 int system_wide_registration(char * file, char * name) {
     struct passwd *pwd;

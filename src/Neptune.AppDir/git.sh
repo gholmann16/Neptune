@@ -4,9 +4,9 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/AppImage/appi
 cd appimage.github.io
 git sparse-checkout init --cone
 git sparse-checkout set data
-rm -rf /etc/Neptune/data
-mv /tmp/appimage.github.io/data /etc/Neptune
-cd /etc/Neptune/data
+rm -rf /etc/neptune/data
+mv /tmp/appimage.github.io/data /etc/neptune
+cd /etc/neptune/data
 for f in *; do
     test -f "$f" && mv "$f" "${f,,}" &>/dev/null
 done

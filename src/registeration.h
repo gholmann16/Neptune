@@ -5,7 +5,7 @@
 #define MAX_PROGRAM_NAME 256
 
 int registerApp(char file[]) {
-    FILE *list = fopen("/etc/Neptune/list", "a");
+    FILE *list = fopen("/etc/neptune/list", "a");
     
     fprintf(list, "%s\n", file);
     fclose(list);
@@ -59,7 +59,7 @@ int check_if_registered(char line[]) {
     char buffer[MAX_PROGRAM_NAME];
 
     FILE *file;
-    file = fopen("/etc/Neptune/list", "r");
+    file = fopen("/etc/neptune/list", "r");
     strcat(line, "\n");
 
     if (file == NULL)

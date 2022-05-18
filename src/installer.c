@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
                 printf("You need to be root to use this program, as it will edit system wide programs.\n");
                 exit(1); //return 1
             }
-            return install();
+            return install(argv);
         }
         else if(strcmp(argv[1], "--uninstall\0") == 0) {
             if(geteuid() != 0) {
@@ -49,21 +49,22 @@ int main(int argc, char* argv[]) {
 
 }
 
-int install() {
+int install(char* argv[]) {
 
     //Essentially if data dir does not exist, install Neptune
 
-    mkdir("/etc/Neptune", 0755);
-    defineDir("/etc/Neptune/dir", "/Applications", "applications installed by this program", "/");
-    defineDir("/etc/Neptune/userdata", "~/.AppImageData", "data from AppImages?", "~/");
+    mkdir("/etc/neptune", 0755);
+    mkdir("/etc/neptune/bin", 0755);
+    defineDir("/etc/neptune/dir", "/Applications", "applications installed by this program", "/");
+    defineDir("/etc/neptune/userdata", "~/.AppImageData", "data from AppImages?", "~/");
 
-    char patha[MAX_DIR_LEN + 10] = "export PATH=";
-    strcat(patha, getdir());
-    strcat(patha, ":$PATH");
     FILE *path = fopen("/etc/profile.d/neptune.sh", "w");
-    fprintf(path, "%s\n", patha);
+    fprintf(path, "export PATH=/etc/neptune/bin:$PATH");
     fclose(path);
 
+    rename(argv[0], "/etc/neptune/bin/nep");
+
+    printf("Open a new bash shell to get /etc/neptune/bin/nep on your path.\n");
     printf("To uninstall Neptune use \"sudo nep --uninstall\"\n");
     
     return 0;
@@ -72,16 +73,15 @@ int install() {
 int uninstall(char* argv[]) {
 
     remove("/etc/profile.d/neptune.sh");
-    printf("%s", argv[0]);
     remove(argv[0]);
 
     //Leaves directory in case user has apps there
 
-    system("rm -rf /etc/Neptune");
+    system("rm -rf /etc/neptune");
 }
 
 char *getdir() {
-    char pdir[64] = "/etc/Neptune/dir";
+    char pdir[64] = "/etc/neptune/dir";
     static char dir[MAX_DIR_LEN];
     FILE *fp = fopen(pdir, "r");                 // do not use "rb"
     while (fgets(dir, sizeof(dir), fp)) {
