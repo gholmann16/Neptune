@@ -74,12 +74,6 @@ int main(int argc, char* argv[]) {
                 sprintf(cmd, "ls /etc/neptune/data | grep \"^%s\"", argv[2]);
                 return system(cmd);
             }
-            else if(strcmp(argv[1], "run\0") == 0) {
-                printf("Note: any arguments for this program will not be passed.\n");
-                printf("To pass more arguments, use the program softlink found in path or /etc/neptune/bin.\n");
-                char *array[1];
-                return run(argv[2], 0, array);
-            }
             else if(appimage_get_type(argv[1], 0) != -1) {
                 checkroot();
                 return install(argv[1], getdir("/etc/neptune/dir"));

@@ -1,6 +1,6 @@
 General Purpose:
 
-Neptune is an App Manager for Linux. Its purpose as of now is to integrate installed AppImages into your system.
+Neptune is an App Manager for Linux. Its purpose as of now is to integrate installed AppImages into your system. It runs all AppImages inside of a sandbox so you can download appimages from the internet with less stress.
 
 Features:
 
@@ -10,6 +10,7 @@ Features:
     Can update AppImages
     Maintains a list of current AppImages
     Integrates and De-Integrates desktop file into the system.
+    Runs appimages in a sandbox 
 
 How to build:
 
