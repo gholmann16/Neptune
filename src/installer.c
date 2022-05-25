@@ -13,39 +13,18 @@ int install();
 int uninstall();
 char *getdir();
 int defineDir();
-int help() {
-    printf("Commands:\n");
-    printf("--install\tinstalls Neptune\n");
-    printf("--uninstall\tuninstall Neptune\n");
-}
 
 int main(int argc, char* argv[]) {
 
-    if(argc == 1) {
-        help();
-        return 0;
+    if(geteuid() != 0) {
+        printf("You need to be root to use this program, as it will edit system wide programs.\n");
+        exit(1); //return 1
     }
 
-    else {
-        if(strcmp(argv[1], "--install\0") == 0) {
-            if(geteuid() != 0) {
-                printf("You need to be root to use this program, as it will edit system wide programs.\n");
-                exit(1); //return 1
-            }
-            return install(argv);
-        }
-        else if(strcmp(argv[1], "--uninstall\0") == 0) {
-            if(geteuid() != 0) {
-                printf("You need to be root to use this program, as it will edit system wide programs.\n");
-                exit(1); //return 1
-            }
-            return uninstall(argv);
-        }
-        else {
-            help();
-            return 1;
-        }
-    }
+    if(strcmp(argv[2], "--install\0") == 0)
+        return install(argv);
+    else if(strcmp(argv[2], "--uninstall\0") == 0)
+        return uninstall(argv);
 
 }
 
@@ -62,10 +41,10 @@ int install(char* argv[]) {
     fprintf(path, "export PATH=/etc/neptune/bin:$PATH");
     fclose(path);
 
-    rename(argv[0], "/etc/neptune/bin/nep");
+    rename(argv[1], "/etc/neptune/bin/nep");
 
     printf("Open a new bash shell to get /etc/neptune/bin/nep on your path.\n");
-    printf("To uninstall Neptune use \"sudo nep --uninstall\"\n");
+    printf("To uninstall Neptune use \"nep --uninstall\"\n");
     
     return 0;
 }
@@ -73,7 +52,7 @@ int install(char* argv[]) {
 int uninstall(char* argv[]) {
 
     remove("/etc/profile.d/neptune.sh");
-    remove(argv[0]);
+    remove(argv[1]);
 
     //Leaves directory in case user has apps there
 

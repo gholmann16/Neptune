@@ -1,31 +1,21 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+#include <dirent.h>
 #include <appimage/appimage.h>
-
 #define MAX_DIR_LEN 512
-#define MAX_FILE_LENGTH 128
-
-#include "betterexec.h"
-#include "registeration.h" //depends on betterexec
-#include "extra.h"
-#include "system.h" //depends on betterexec and extra
-#include "checkroot.h"
+#define MAX_FILE_LENGTH 256 //might wanna look at these values in the future
+#define VERBOSE 0
 #include "scrape.h"
+#include "betterexec.h"
+#include "extra.h"
 
 int help();
-int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
+int download(char file[MAX_FILE_LENGTH]);
 int run(char file[MAX_FILE_LENGTH], int arg, char* argv[]);
-
-const char *getFileExtension(const char *filename);
+int check(char file[MAX_FILE_LENGTH]);
+int check_if_registered(char line[]);
 
 int main(int argc, char* argv[]) {
 
@@ -54,34 +44,133 @@ int main(int argc, char* argv[]) {
                     return 6;
             }
             else if(strcmp(argv[1], "install\0") == 0) {
-                checkroot();
-                return install(argv[2], getdir("/etc/neptune/dir"));
+                int ret = 2;
+                char *file = combine(getenv("OWD"), argv[2], 1);
+                sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
+
+                if(!access(file, F_OK ) && !check(file)) 
+                    ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", file);
+                else if (download(argv[2])) {
+                    file = combine("/tmp/", argv[2], 0);
+                    if(!check(file))
+                        ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", file);
+                }
+                free(file);
+                remove("/tmp/neproot");
+                return ret; //unexpected error
+
             }
-            else if(strcmp(argv[1], "remove\0") == 0) {
-                checkroot();
-                return delete(argv[2], getdir("/etc/neptune/dir"));
+            else if(strcmp(argv[1], "remove\0") == 0)  {
+                sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
+                int ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot/", "-R", argv[2]);
+                remove("/tmp/neproot");
+                return ret;
             }
             else if(strcmp(argv[1], "update\0") == 0) {
-                checkroot();
+                
+                int ret;
+
                 if(argc == 2) {
-                    return sexecl(combine(getenv("APPDIR"), "git.sh", 1), NULL, NULL, NULL);
+                    sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/git.sh", 0), "/tmp/neproot", NULL);
+                    ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot", NULL, NULL);
+                    remove("/tmp/neproot/");
                     //git pull from appimage.github.io and download data folder
                 }
-                return update(argv[2], getdir("/etc/neptune/dir"));
+                else {
+                    char *file = combine(getdir("/etc/neptune/dir"), argv[2], 1);
+                    ret = 2;
+                    if (check(file)) {
+                        sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
+                        ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot", "-Sy", argv[2]); //later add compaitibility for multiple packages
+                    }
+                    remove("/tmp/neproot/");
+                    free(file);
+                }
+
+                return ret;
             }
             else if(strcmp(argv[1], "find\0") == 0) {
                 char cmd[256];
                 sprintf(cmd, "ls /etc/neptune/data | grep \"^%s\"", argv[2]);
                 return system(cmd);
             }
-            else if(appimage_get_type(argv[1], 0) != -1) {
-                checkroot();
-                return install(argv[1], getdir("/etc/neptune/dir"));
+            else if(appimage_get_type(argv[1], VERBOSE) != -1) {
+                if(check_if_registered(argv[1]))
+                    printf("AppImage is registered.");
+                else {
+                    printf("AppImage not registered. Run \"nep install %s\" to install it", argv[1]);
+                }
+                return 0;
             }
-            else if(strcmp(argv[1], "--install") == 0)
-                return execl(combine(getenv("APPDIR"), "/usr/bin/installer", 0), getenv("APPIMAGE"), "--install", NULL);
-            else if(strcmp(argv[1], "--uninstall") == 0)
-                return execl(combine(getenv("APPDIR"), "/usr/bin/installer", 0), getenv("APPIMAGE"), "--uninstall", NULL);
+            else if(strcmp(argv[1], "-i\0") == 0) {
+
+                if (strcmp(getenv("HOME"), "/") == 0) {
+                    return 10; //this is for nobody user
+                }
+
+                if (appimage_is_registered_in_system(argv[2]))
+                    appimage_unregister_in_system(argv[2], VERBOSE); //in case you uninstall and reinstall Neptune
+                
+                appimage_register_in_system(argv[2], VERBOSE);
+            
+                char* localdata = getdir("/etc/neptune/userdata");
+                memmove(localdata, localdata+2, strlen(localdata));  //remove ~/
+                char* full;
+                sprintf(full, "%s/%s", getenv("HOME"), localdata);
+                mkdir(full, 0700);
+                chdir(full);
+                DIR* dir = opendir(argv[3]);
+
+                if (dir) {
+                    /* Directory exists. */
+                    closedir(dir);
+                    printf("App already installed on this user, skipping installation.");
+                    return 9;
+                } 
+                
+                else {
+                    mkdir(argv[3], 0700);
+                    chdir(argv[3]);
+                    mkdir("metadata", 0700);
+                    mkdir("apphome", 0700);
+                    // mkdir("appcopy", 0700);
+                    
+                    FILE *perms = fopen("metadata/permissions.ini", "w");
+                    fprintf(perms, "[X-App Permissions]\n");
+                    fprintf(perms, "Level=2\n");
+                    fprintf(perms, "Files=xdg-desktop;xdg-download:rw;\n");
+                    fprintf(perms, "Devices=dri;\n");
+                    fprintf(perms, "Sockets=x11;wayland;pulseaudio;network;\n");
+                    fclose(perms);
+
+                    // link(combine("appcopy/", argv[3], 0), combine(getdir("/etc/neptune/dir"), argv[3], 1));
+                    // the link is to make it easy to transfer these appimages
+                    // might implement some more functionality after I make sandboxing mandatory
+                    return 0;
+                }
+                
+            }
+            else if(strcmp(argv[1], "-u\0") == 0) { //TODO: delete data dir 
+                if (strcmp(getenv("HOME"), "/") == 0) {
+                    return 10; //this is for nobody user
+                }
+                return appimage_unregister_in_system(argv[2], VERBOSE);
+            }
+            else if (strcmp(argv[1], "-d\0") == 0) {
+                printf("You should not have accessed this function.\n"); //uninstall data
+            }
+            else if(strcmp(argv[1], "--install") == 0) {
+                sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/bin/installer", 0), "/tmp/installer", NULL);
+                int ret = sexecl("/usr/bin/pkexec", "/tmp/installer", getenv("APPIMAGE"), "--install");
+                remove("/tmp/installer");
+                return ret;
+            }
+            else if(strcmp(argv[1], "--uninstall") == 0) {
+                sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/bin/installer", 0), "/tmp/installer", NULL);
+                int ret = sexecl("/usr/bin/pkexec", "/tmp/installer", getenv("APPIMAGE"), "--uninstall");
+                remove("/tmp/installer");
+                return ret;
+            }
             else {
                 help();
                 return 4;
@@ -95,10 +184,8 @@ int main(int argc, char* argv[]) {
 
 }
 
-int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-    if(!access(combine(getenv("OWD"), file, 1), F_OK ))
-        return integrate(combine(getenv("OWD"), file, 1), dir);
-    else if(!access(combine("/etc/neptune/data/", file, 0), F_OK )) {
+int download(char file[MAX_FILE_LENGTH]) {
+    if(!access(combine("/etc/neptune/data/", file, 0), F_OK )) {
         char cmd[2048];
         sprintf(cmd, "/usr/bin/wget -i %s -q --show-progress -O %s", combine("/etc/neptune/data/", file, 0), combine("/tmp/", file, 0));
         system(cmd);
@@ -106,113 +193,60 @@ int install(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
             struct stat st;
             stat(combine("/tmp/", file, 0), &st);
             if(st.st_size > 0)
-                return integrate(combine("/tmp/", file, 0), dir);
+                return 1; //successful, 1 here means it worked
             else {
                 printf("File download failed.\n");
                 remove(combine("/tmp/", file, 0));
                 printf("Contents of %s database file:\n", file);
-                return sexecl("/bin/cat", combine("/etc/neptune/data/", file, 0), NULL, NULL);
+                sexecl("/bin/cat", combine("/etc/neptune/data/", file, 0), NULL, NULL);
+                return 0;
             }
         }
         else {
             printf("File download failed.\n");
-            return 6;
+            exit(5); //idk when this is supposed to happen
+                     //prolly bad internet?
         }
     }
-    else if(strcmp(getFileExtension(file), "AppImage") == 0) {
-        printf("No file of that name (%s) found.\n", file);
-        return 5;
-    }
     else {
-        printf("No program found in database. ");
-        printf("If you have not updated it in a while or this is your accessing it, run sudo nep update to update your local program database.\n");
+        printf("No program (%s) found in database or directory. ", file);
+        printf("If you have not updated it in a while or this is your accessing it, run nep update to update your local program database.\n");
+        return 0;
+    }  
+}
+
+int check_if_registered(char line[]) {
+
+    char buffer[MAX_FILE_LENGTH];
+
+    FILE *file;
+    file = fopen("/etc/neptune/list", "r");
+    strcat(line, "\n");
+
+    if (file == NULL)
+    {
+        printf("Error opening file(s).\n");
         return 0;
     }
-}
 
-int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+    bool keep_reading = true;
+    do {
 
-    if (appimage_get_type(file, 0) == -1) {
-        printf("This file is not an AppImage.\n");
-        return 2;
-    }
+        // stores the next line from the file into the buffer        
+        fgets(buffer, MAX_FILE_LENGTH, file);
 
-    char filenamecp[MAX_FILE_LENGTH];
-    char finalfile[MAX_DIR_LEN+MAX_FILE_LENGTH];
-    strcpy(filenamecp, file);
+        // if we've reached the end of the file, stop reading from the file
+        if (feof(file)) keep_reading = false;
+        else if (strcmp(buffer, line) == 0) {
+            return 1;
+        }
 
-    chown(file, 0, 0);
-    chmod(file, 0755);
+    } while (keep_reading);
 
-    // Don't add part after -
-    char *ptr;
-
-    ptr = strchr(file, '-');
-    if (ptr != NULL)
-        *ptr = '\0';
-    else if(strcmp(getFileExtension(file), "AppImage") == 0)
-        file[strlen(file)-9] = '\0';
-    
-    int index;
-
-    ptr = strrchr(file, '/');
-    if (ptr == NULL) 
-        ptr = file; 
-        // this used to be a much simpler function
-        //idk if c library updated or sum but this shit is bloated
-    else 
-        ptr = ptr + 1;
-
-
-    strcpy(finalfile, dir);
-    strcat(finalfile, "/");
-    strcat(finalfile, ptr);
-
-    sexecl("/bin/mv", filenamecp, finalfile, NULL);
-    
-    printf("Registering into system.\n");
-
-    char * softlink = combine("/etc/neptune/bin", ptr, 1);
-    remove(softlink);
-    symlink(finalfile, softlink);
-    system_wide_registration(softlink, ptr);
-    remove(softlink);
-    symlink("/etc/neptune/bin/nep", softlink);
-    free(softlink);
-    registerApp(ptr);
-
+    fclose(file);
     return 0;
 }
 
-int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-    char *real = combine(dir, file, 1);
-    char *link = combine("/etc/neptune/bin/", file, 0);
-    printf("Deregistering from system.\n");
-    system_wide_unregistration(link, NULL);
-    remove(link);
-    unregisterApp("/etc/neptune/list", file);
-    if (remove(real) == 0)
-        printf("Success\n");
-    else
-        perror("Unable to delete the file\n");
-    free(link); //holy shit properly using my memory? what am I some kind of kernel dev??
-    free(real);
-    return 0;
-}
-
-int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
-
-    if (appimage_get_type(combine(dir, file, 1), 0) == -1) {
-        printf("This file is not an AppImage.");
-        return 2;
-    }
-
-    const char *old = combine(file, ".zs-old", 0);
-    sexecl(combine(getenv("APPDIR"), "/usr/bin/appimageupdatetool-x86_64.AppImage", 0), "-O", combine(dir, file, 1), NULL);
-    if( access(combine(dir, old, 1), F_OK ) == 0 ) 
-        sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
-    return 0;
-}
 
 int run(char file[MAX_FILE_LENGTH], int argc, char * argv[]) {
 
@@ -253,7 +287,6 @@ int run(char file[MAX_FILE_LENGTH], int argc, char * argv[]) {
     return ret;
 }
 
-
 int help() {
     printf("Commands:\n");
     printf("install - installs a program\n");
@@ -261,15 +294,18 @@ int help() {
     printf("remove - removes a program\n");
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
+    printf("search - searchs for an app in a broken database.\n");
     printf("help - displays help menu\n");
     printf("--install - installs Neptune\n");
     printf("--uninstall - uninstalls Neptune\n");
     return 0;
 }
 
-const char *getFileExtension(const char *filename) {
-    const char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename) return "";
-    return dot + 1;
+int check(char file[MAX_FILE_LENGTH]) {
+    if (appimage_get_type(file, VERBOSE) == -1) {
+        printf("This file is not an AppImage.\n");
+        return 2;
+    }
+    else 
+        return 0;
 }
-

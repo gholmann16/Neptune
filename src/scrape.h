@@ -1,7 +1,7 @@
 char *getdir(char pdir[]) {
 
     if(access(pdir, F_OK )) {
-        printf("You have not selected your directory preferences yet. Run nep --install to install Neptune to your system");
+        printf("You have not selected your directory preferences yet. Run ./Neptune-x86_64.AppImage --install to install Neptune to your system");
         exit(1);
     }
     

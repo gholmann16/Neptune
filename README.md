@@ -17,11 +17,11 @@ How to build:
 1. 
     Run compile.sh to build Neptune
 2. 
-    To Install Neptune run: `sudo ./Neptune.Installer-x86_64.AppImage --install`
+    To Install Neptune run: `./Neptune.Installer-x86_64.AppImage --install`
 3. 
     Command 'nep' will now allow you to add or remove AppImages from your system. Can install local AppImages or from appimage.github.io
 4. 
-    To uninstall Neptune use `sudo nep --uninstall`
+    To uninstall Neptune use `nep --uninstall`
 
 Q: Why does Neptune use AppImages?
 

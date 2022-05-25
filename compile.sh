@@ -18,5 +18,5 @@ fi
 gcc src/AppRun.c -o src/Neptune.AppDir/AppRun -Wno-format-truncation
 gcc src/main.c -g -lappimage -o src/Neptune.AppDir/usr/bin/Neptune
 gcc src/installer.c -o src/Neptune.AppDir/usr/bin/installer
-gcc src/libregister.c -lappimage -o src/Neptune.AppDir/usr/bin/integrator
+gcc src/root.c -o src/Neptune.AppDir/usr/local/bin/neproot
 appimagetool src/Neptune.AppDir/ > build.output

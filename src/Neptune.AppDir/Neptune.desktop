@@ -5,4 +5,5 @@ Terminal=false
 Exec=Neptune
 Name=Neptune
 Icon=Neptune
+MimeType=application/vnd.appimage;
 Categories=Utility;
