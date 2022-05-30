@@ -12,3 +12,9 @@ char *getdir(char pdir[]) {
     fclose(fp);
     return dir;
 }
+
+const char *getFileExtension(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return "";
+    return dot + 1;
+}

@@ -34,6 +34,9 @@ int install(char* argv[]) {
 
     mkdir("/etc/neptune", 0755);
     mkdir("/etc/neptune/bin", 0755);
+    mkdir("/etc/neptune/apps", 0755);
+    mkdir("/etc/neptune/cache", 0755);
+    mkdir("/etc/neptune/data", 0755);
     defineDir("/etc/neptune/dir", "/Applications", "applications installed by this program", "/");
     defineDir("/etc/neptune/userdata", "~/.AppImageData", "data from AppImages?", "~/");
 
@@ -55,8 +58,15 @@ int uninstall(char* argv[]) {
     remove(argv[1]);
 
     //Leaves directory in case user has apps there
+    //this function needs to be fixed lfmaoooo
 
-    system("rm -rf /etc/neptune");
+    remove("/etc/neptune/bin/nep");
+    remove("/etc/neptune/dir");
+    remove("/etc/neptune/userdata");
+    system("rm -rf /etc/neptune/cache");
+    system("rm -rf /etc/neptune/data");
+    
+    return 0;
 }
 
 char *getdir() {

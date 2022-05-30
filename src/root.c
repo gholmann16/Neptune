@@ -17,8 +17,7 @@
 
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]);
-const char *getFileExtension(const char *filename);
+int update(char file[MAX_FILE_LENGTH], char dir[18]);
 
 int main(int argc, char* argv[]) {
 
@@ -32,7 +31,7 @@ int main(int argc, char* argv[]) {
     else if(strcmp(argv[1], "-R\0") == 0)
         return delete(argv[2], getdir("/etc/neptune/dir"));
     else if(strcmp(argv[1], "-Sy\0") == 0)
-        return update(argv[2], getdir("/etc/neptune/dir"));
+        return update(argv[2], "/etc/neptune/apps");
     else {
         printf("404, Internal Command not found.\n");
         return 4;
@@ -42,7 +41,7 @@ int main(int argc, char* argv[]) {
 int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
 
     char filenamecp[MAX_FILE_LENGTH];
-    char finalfile[MAX_DIR_LEN+MAX_FILE_LENGTH];
+    char finalfile[MAX_DIR_LEN];
     strcpy(filenamecp, file);
 
     chown(file, 0, 0);
@@ -68,8 +67,7 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
         ptr = ptr + 1;
 
 
-    strcpy(finalfile, dir);
-    strcat(finalfile, "/");
+    strcpy(finalfile, "/etc/neptune/apps/");
     strcat(finalfile, ptr);
 
     sexecl("/bin/mv", filenamecp, finalfile, NULL);
@@ -85,36 +83,51 @@ int integrate(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     free(softlink);
     registerApp(ptr);
 
+    if (sexecl("/etc/neptune/bin/nep", "-e", finalfile, NULL)) {
+        printf("Desktop file not found.");
+        return 0; //I'm going to start returning 0 so long as the program finishes
+    }
+    
+    strcpy(finalfile, dir);
+    strcat(finalfile, "/");
+    strcat(finalfile, ptr);
+    strcat(finalfile, ".desktop");
+
+    sexecl("/bin/cp", getdir("/tmp/filepath"), finalfile, NULL);
+    chmod(finalfile, 0755);
+    remove("/tmp/filepath");
+
     return 0;
 }
 
 int delete(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
     char *real = combine(dir, file, 1);
+    char *real2 = combine(real, ".desktop", 1);
     char *link = combine("/etc/neptune/bin/", file, 0);
+    char *app = combine("/etc/neptune/apps/", file, 0);
+    char *cache = combine("/etc/neptune/cache/", file, 0);
     printf("Deregistering from system.\n");
     system_wide_unregistration(link, NULL);
     remove(link);
     unregisterApp("/etc/neptune/list", file);
-    if (remove(real) == 0)
+    remove(real2);
+    if (rename(app, cache) == 0)
         printf("Success\n");
     else
-        perror("Unable to delete the file\n");
+        perror("Unable to cache the file\n");
     free(link); //holy shit properly using my memory? what am I some kind of kernel dev??
     free(real);
+    free(app);
+    free(real2);
+    free(cache);
     return 0;
 }
 
-int update(char file[MAX_FILE_LENGTH], char dir[MAX_DIR_LEN]) {
+int update(char file[MAX_FILE_LENGTH], char dir[18]) {
 
     const char *old = combine(file, ".zs-old", 0);
     sexecl(combine(getenv("APPDIR"), "/usr/bin/appimageupdatetool-x86_64.AppImage", 0), "-O", combine(dir, file, 1), NULL);
     if( access(combine(dir, old, 1), F_OK ) == 0 ) 
         sexecl("/bin/rm", combine(dir, old, 1), NULL, NULL);
     return 0;
-}
-
-const char *getFileExtension(const char *filename) {
-    const char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename) return "";
-    return dot + 1;
 }

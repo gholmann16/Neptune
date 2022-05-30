@@ -50,10 +50,14 @@ int main(int argc, char* argv[]) {
 
                 if(!access(file, F_OK ) && !check(file)) 
                     ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", file);
+                else if(!access(argv[2], F_OK) && !check(argv[2]))
+                    ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", argv[2]);
                 else if (download(argv[2])) {
                     file = combine("/tmp/", argv[2], 0);
                     if(!check(file))
                         ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", file);
+                    else 
+                        remove(file);
                 }
                 free(file);
                 remove("/tmp/neproot");
@@ -62,9 +66,16 @@ int main(int argc, char* argv[]) {
             }
             else if(strcmp(argv[1], "remove\0") == 0)  {
                 sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
-                int ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot/", "-R", argv[2]);
+                int ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-R", argv[2]);
                 remove("/tmp/neproot");
-                return ret;
+                return ret; //change these returns to a verbose chosen printf
+            }
+            else if(strcmp(argv[1], "reinstall\0") == 0) {
+                sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
+                sexecl("/usr/bin/pkexec", "/tmp/neproot", "-R", argv[2]);
+                sexecl("/usr/bin/pkexec", "/tmp/neproot", "-U", combine("/etc/neptune/cache/", argv[2], 0));
+                remove("/tmp/neproot");
+                return 0;
             }
             else if(strcmp(argv[1], "update\0") == 0) {
                 
@@ -72,18 +83,18 @@ int main(int argc, char* argv[]) {
 
                 if(argc == 2) {
                     sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/git.sh", 0), "/tmp/neproot", NULL);
-                    ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot", NULL, NULL);
-                    remove("/tmp/neproot/");
+                    ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", NULL, NULL);
+                    remove("/tmp/neproot");
                     //git pull from appimage.github.io and download data folder
                 }
                 else {
-                    char *file = combine(getdir("/etc/neptune/dir"), argv[2], 1);
+                    char *file = combine("/etc/neptune/apps", argv[2], 1);
                     ret = 2;
                     if (check(file)) {
                         sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/local/bin/neproot", 0), "/tmp/neproot", NULL);
-                        ret = sexecl("/usr/bin/pkexec/", "/tmp/neproot", "-Sy", argv[2]); //later add compaitibility for multiple packages
+                        ret = sexecl("/usr/bin/pkexec", "/tmp/neproot", "-Sy", argv[2]); //later add compaitibility for multiple packages
                     }
-                    remove("/tmp/neproot/");
+                    remove("/tmp/neproot");
                     free(file);
                 }
 
@@ -112,19 +123,22 @@ int main(int argc, char* argv[]) {
                     appimage_unregister_in_system(argv[2], VERBOSE); //in case you uninstall and reinstall Neptune
                 
                 appimage_register_in_system(argv[2], VERBOSE);
-            
-                char* localdata = getdir("/etc/neptune/userdata");
-                memmove(localdata, localdata+2, strlen(localdata));  //remove ~/
-                char* full;
-                sprintf(full, "%s/%s", getenv("HOME"), localdata);
+                char rlocaldata[MAX_DIR_LEN];
+                char localdata[MAX_DIR_LEN];
+                strncpy(rlocaldata, getdir("/etc/neptune/userdata"), MAX_DIR_LEN-1);
+                rlocaldata[MAX_DIR_LEN] = '\0';
+                for (int i = 0; i < strlen(rlocaldata); i++)
+                    localdata[i] = rlocaldata[i+2]; //could be problematic
+                char* full = combine(getenv("HOME"), localdata, 1);
                 mkdir(full, 0700);
                 chdir(full);
+                free(full);
                 DIR* dir = opendir(argv[3]);
 
                 if (dir) {
                     /* Directory exists. */
                     closedir(dir);
-                    printf("App already installed on this user, skipping installation.");
+                    printf("App already installed on this user, skipping installation.\n");
                     return 9;
                 } 
                 
@@ -158,6 +172,21 @@ int main(int argc, char* argv[]) {
             }
             else if (strcmp(argv[1], "-d\0") == 0) {
                 printf("You should not have accessed this function.\n"); //uninstall data
+                return 0;
+            }
+            else if (strcmp(argv[1], "-e\0") == 0) {
+                char **array = appimage_list_files(argv[2]);
+                int i = 0;
+                while (array[i] != NULL) {
+                    if (strcmp(getFileExtension(array[i]), "desktop") == 0) {
+                        FILE *desktop = fopen("/tmp/filepath", "w");
+                        fprintf(desktop, "%s", array[i]);
+                        fclose(desktop);
+                        return 0;
+                    }
+                    i++;
+                }
+                return 1; //not found;
             }
             else if(strcmp(argv[1], "--install") == 0) {
                 sexecl("/bin/cp", combine(getenv("APPDIR"), "/usr/bin/installer", 0), "/tmp/installer", NULL);
@@ -256,7 +285,7 @@ int run(char file[MAX_FILE_LENGTH], int argc, char * argv[]) {
     char dir1[MAX_DIR_LEN+1];
     char dir2[MAX_DIR_LEN+1];
     
-    strncpy(dir1, getdir("/etc/neptune/dir"), MAX_DIR_LEN);
+    strncpy(dir1, "/etc/neptune/apps", MAX_DIR_LEN);
     strncpy(dir2, getdir("/etc/neptune/userdata"), MAX_DIR_LEN);
     dir1[MAX_DIR_LEN] = '\0';
     dir2[MAX_DIR_LEN] = '\0';
@@ -267,7 +296,7 @@ int run(char file[MAX_FILE_LENGTH], int argc, char * argv[]) {
 
     if(!access(program, F_OK)) {
         char cmd[4096];
-        sprintf(cmd, "aisap-0.6.4-alpha-x86_64.AppImage --profile %s/metadata/permissions.ini --data-dir %s/apphome %s", location, location, program);
+        sprintf(cmd, "aisap-0.6.6-alpha-x86_64.AppImage --profile %s/metadata/permissions.ini --data-dir %s/apphome %s", location, location, program);
         if(argc > 0)
             for (int i = 1; i < argc; i++) {
                 strcat(cmd, " ");
@@ -294,7 +323,6 @@ int help() {
     printf("remove - removes a program\n");
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
-    printf("search - searchs for an app in a broken database.\n");
     printf("help - displays help menu\n");
     printf("--install - installs Neptune\n");
     printf("--uninstall - uninstalls Neptune\n");

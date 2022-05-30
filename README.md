@@ -23,6 +23,10 @@ How to build:
 4. 
     To uninstall Neptune use `nep --uninstall`
 
+Notes: 
+
+Relies on /bin/cp, /bin/mv, /usr/bin/pkexec, and a glibc version more recent than Ubuntu LTS (unless you self compile of course).
+
 Q: Why does Neptune use AppImages?
 
 A: AppImages work on any distribution meaning that they are easier for developers to develop for. They also come bundled with all system resources and are a single executable. In comparison to flatpaks or snaps, they also take up much less storage. 
