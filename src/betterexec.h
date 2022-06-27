@@ -1,7 +1,4 @@
-#include <unistd.h>
-#include <stdlib.h>
 #include <sys/wait.h>
-#include <stdio.h>
 
 int sexecl(const char *arg1, const char *arg2, const char *arg3, const char *arg4) {
     pid_t p=fork();

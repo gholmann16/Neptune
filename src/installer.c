@@ -95,8 +95,10 @@ int defineDir(char *file, char *defo, char *message, char *starter) {
     else {
         answer[strcspn(answer, "\n")] = 0;
         printf("Valid directory dected, saving prefrences.\n");
-        mkdir(combine(starter, answer, 0), 0755);
-        fprintf(dirFile, "%s", combine(starter, answer, 0));
+        char *newdir = combine(starter, answer, 0);
+        mkdir(newdir, 0755);
+        fprintf(dirFile, "%s", newdir);
+        free(newdir);
     }
 
     fclose(dirFile);
