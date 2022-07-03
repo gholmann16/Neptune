@@ -3,9 +3,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-#include "registeration.h"
-#include "checkroot.h"
-#include "extra.h"
 
 #define MAX_DIR_LEN 512
 
@@ -95,10 +92,9 @@ int defineDir(char *file, char *defo, char *message, char *starter) {
     else {
         answer[strcspn(answer, "\n")] = 0;
         printf("Valid directory dected, saving prefrences.\n");
-        char *newdir = combine(starter, answer, 0);
-        mkdir(newdir, 0755);
-        fprintf(dirFile, "%s", newdir);
-        free(newdir);
+        strcat(starter, answer);
+        mkdir(starter, 0755);
+        fprintf(dirFile, "%s", starter);
     }
 
     fclose(dirFile);

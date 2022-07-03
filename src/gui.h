@@ -1,8 +1,5 @@
-
-int integration()
-{
-    if(VERBOSE) 
-        printf("Integrating AppImage: %s", IupGetGlobal("UNFILTERED"));
+int integration() {
+    printf("Integrating AppImage: %s", IupGetGlobal("UNFILTERED"));
     install(IupGetGlobal("UNFILTERED"));
     return IUP_DEFAULT;
 }
