@@ -24,10 +24,10 @@ int main(int argc, char* argv[]) {
         ptr = ptr + 1;
 
     
-    if(argc == 1 && strcmp(ptr, "nep") != 0) return run(ptr, 0, argv);
+    if(argc == 1 && strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, 0, argv);
     else if(argc == 1) return help();
     //If not running Neptune, run program in sandbox (with args)
-    else if (strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
+    else if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
     else if(strcmp(argv[1], "help\0") == 0) return help();
     else if(strcmp(argv[1], "list\0") == 0) return list();
     else if(strcmp(argv[1], "install\0") == 0 && geteuid() == 0) return install(argv[2]);
