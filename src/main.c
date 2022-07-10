@@ -34,6 +34,8 @@ int main(int argc, char* argv[]) {
     else if(strcmp(argv[1], "install\0") == 0) return escalate(argv);
     else if(strcmp(argv[1], "remove\0") == 0 && geteuid() == 0) return destroy(argv[2]);
     else if(strcmp(argv[1], "remove\0") == 0) return escalate(argv);
+    else if(strcmp(argv[1], "uninstall\0") == 0 && geteuid() == 0) return uninstall(argv[2]);
+    else if(strcmp(argv[1], "uninstall\0") == 0) return escalate(argv);    
     else if(strcmp(argv[1], "reinstall\0") == 0 && geteuid() == 0) return reinstall(argv[2]);
     else if(strcmp(argv[1], "reinstall\0") == 0) return escalate(argv);
     else if(strcmp(argv[1], "update\0") == 0 && geteuid() == 0) return update(argc, argv[2]);
