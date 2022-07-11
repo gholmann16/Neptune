@@ -7,4 +7,5 @@ reasons.md
 build.output
 Neptune
 installer
-integrator
+lib
+other.sh

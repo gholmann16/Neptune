@@ -11,6 +11,7 @@
 #include "include.h"
 #include "gui.h"
 #include "meta.h"
+#include "application.h"
 
 int help();
 int escalate(char *argv[]);
@@ -25,7 +26,7 @@ int main(int argc, char* argv[]) {
 
     
     if(argc == 1 && strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, 0, argv);
-    else if(argc == 1) return help();
+    else if(argc == 1) return self(argc, argv);
     //If not running Neptune, run program in sandbox (with args)
     else if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
     else if(strcmp(argv[1], "help\0") == 0) return help();
@@ -40,9 +41,13 @@ int main(int argc, char* argv[]) {
     else if(strcmp(argv[1], "reinstall\0") == 0) return escalate(argv);
     else if(strcmp(argv[1], "update\0") == 0 && geteuid() == 0) return update(argc, argv[2]);
     else if(strcmp(argv[1], "update\0") == 0) return escalate(argv);
+    else if(strcmp(argv[1], "refresh\0") == 0 && geteuid() == 0) return refresh();
+    else if(strcmp(argv[1], "refresh\0") == 0) return escalate(argv);
     else if(strcmp(argv[1], "find\0") == 0) return find(argv[2]);
-    else if(strcmp(argv[1], "--install") == 0) return nepinstall();
-    else if(strcmp(argv[1], "--uninstall") == 0) return nepuninstall();
+    else if(strcmp(argv[1], "--install") == 0 && geteuid() == 0) return nepinstall();
+    else if(strcmp(argv[1], "--install") == 0) return escalate(argv);
+    else if(strcmp(argv[1], "--uninstall") == 0 && geteuid() == 0) return nepuninstall();
+    else if(strcmp(argv[1], "--uninstall") == 0) return escalate(argv);
     else {
         char* appimage = combine(getenv("OWD"), argv[1], 1);
         if(appimage_get_type(appimage, 0) != -1) return gui(argc, argv, appimage);
@@ -54,8 +59,8 @@ int main(int argc, char* argv[]) {
 }
 
 int escalate(char *argv[]) {
-    printf("You require admin privaleges for this command.");
-    if(sexecl("/usr/bin/pkexec", "/etc/neptune/bin/nep", argv[1], argv[2])) printf("Privalege escalation failed, run with su for it to work.");
+    printf("You require admin privaleges for this command.\n");
+    if(sexecl("/usr/bin/pkexec", getenv("APPIMAGE"), argv[1], argv[2])) printf("Privalege escalation failed, run with su for it to work.");
     return 0;
 }
 
@@ -66,6 +71,7 @@ int help() {
     printf("remove - removes a program\n");
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
+    printf("refresh - updates list of appimages\n");
     printf("help - displays help menu\n");
     printf("--install - installs Neptune\n");
     printf("--uninstall - uninstalls Neptune\n");
