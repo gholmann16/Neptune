@@ -1,11 +1,9 @@
 int self(int argc, char* argv[]) {
-    /*
-    IupOpen(&argc, &argv);
-    IupShowXY(dlg, IUP_CENTER, IUP_CENTER);
-
-    IupMainLoop();
-
-    IupClose();
-    return EXIT_SUCCESS;
-    */
+    
+  IupOpen(&argc, &argv);
+  
+  IupMessage("Hello World 1", "Hello world from IUP.");
+  
+  IupClose();
+  return EXIT_SUCCESS;
 }
