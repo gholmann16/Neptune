@@ -6,7 +6,7 @@ int integration() {
 
 int run_once() {
     printf("Running executable: %s", IupGetGlobal("PROGRAM"));
-    sexecl(IupGetGlobal("PROGRAM"), NULL, NULL, NULL);
+    sexecl(IupGetGlobal("PROGRAM"), NULL);
     return IUP_DEFAULT;
 }
 

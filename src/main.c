@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 
 int escalate(char *argv[]) {
     printf("You require admin privaleges for this command.\n");
-    if(sexecl("/usr/bin/pkexec", getenv("APPIMAGE"), argv[1], argv[2])) printf("Privalege escalation failed, run with su for it to work.");
+    if(sexecl("/usr/bin/pkexec", getenv("APPIMAGE"), argv[1], argv[2], NULL)) printf("Privalege escalation failed, run with su for it to work.");
     return 0;
 }
 
@@ -69,6 +69,7 @@ int help() {
     printf("install - installs a program\n");
     printf("update - updates an appimage if availible. If run with no arguments it updates Neptune's download database\n");
     printf("remove - removes a program\n");
+    printf("uninstall - removes a program and all it's data! Only use if you know what you're doing.");
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
     printf("refresh - updates list of appimages\n");
