@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
         ptr = ptr + 1;
 
     
-    if(argc == 1 && strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, 0, argv);
+    if(argc == 1 && strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
     else if(argc == 1) return self(argc, argv);
     //If not running Neptune, run program in sandbox (with args)
     else if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
