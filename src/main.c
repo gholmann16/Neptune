@@ -10,11 +10,10 @@
 
 #include "include.h"
 #include "gui.h"
-#include "meta.h"
+#include "checkinstall.h"
 #include "application.h"
 
 int help();
-int escalate(char *argv[]);
 
 int main(int argc, char* argv[]) {
 
@@ -24,44 +23,23 @@ int main(int argc, char* argv[]) {
     else 
         ptr = ptr + 1;
 
-    
-    if(argc == 1 && strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
+    if(installed()) install_preferences();
+    if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
     else if(argc == 1) return self(argc, argv);
-    //If not running Neptune, run program in sandbox (with args)
-    else if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
     else if(strcmp(argv[1], "help\0") == 0) return help();
     else if(strcmp(argv[1], "list\0") == 0) return list();
-    else if(strcmp(argv[1], "install\0") == 0 && geteuid() == 0) return install(argv[2]);
-    else if(strcmp(argv[1], "install\0") == 0) return escalate(argv);
-    else if(strcmp(argv[1], "remove\0") == 0 && geteuid() == 0) return destroy(argv[2]);
-    else if(strcmp(argv[1], "remove\0") == 0) return escalate(argv);
-    else if(strcmp(argv[1], "uninstall\0") == 0 && geteuid() == 0) return uninstall(argv[2]);
-    else if(strcmp(argv[1], "uninstall\0") == 0) return escalate(argv);    
-    else if(strcmp(argv[1], "reinstall\0") == 0 && geteuid() == 0) return reinstall(argv[2]);
-    else if(strcmp(argv[1], "reinstall\0") == 0) return escalate(argv);
-    else if(strcmp(argv[1], "update\0") == 0 && geteuid() == 0) return update(argc, argv[2]);
-    else if(strcmp(argv[1], "update\0") == 0) return escalate(argv);
-    else if(strcmp(argv[1], "refresh\0") == 0 && geteuid() == 0) return refresh();
-    else if(strcmp(argv[1], "refresh\0") == 0) return escalate(argv);
+    else if(strcmp(argv[1], "install\0") == 0) return install(argv[2]);
+    else if(strcmp(argv[1], "remove\0") == 0) return destroy(argv[2]);
+    else if(strcmp(argv[1], "uninstall\0") == 0) return uninstall(argv[2]);    
+    else if(strcmp(argv[1], "reinstall\0") == 0) return reinstall(argv[2]);
+    else if(strcmp(argv[1], "update\0") == 0) return update(argc, argv[2]);
     else if(strcmp(argv[1], "find\0") == 0) return find(argv[2]);
-    else if(strcmp(argv[1], "--install") == 0 && geteuid() == 0) return nepinstall();
-    else if(strcmp(argv[1], "--install") == 0) return escalate(argv);
-    else if(strcmp(argv[1], "--uninstall") == 0 && geteuid() == 0) return nepuninstall();
-    else if(strcmp(argv[1], "--uninstall") == 0) return escalate(argv);
-    else {
-        char* appimage = combine(getenv("OWD"), argv[1], 1);
-        if(appimage_get_type(appimage, 0) != -1) return gui(argc, argv, appimage);
-        free(appimage);
-        help();
-        return 4;
-    }
+    else if(strcmp(argv[1], "--uninstall") == 0) return remove_preferences();
+    else if(appimage_get_type(argv[1], 0) != -1) return gui(argc, argv);
+    else return help();
 
-}
-
-int escalate(char *argv[]) {
-    printf("You require admin privaleges for this command.\n");
-    if(sexecl("/usr/bin/pkexec", getenv("APPIMAGE"), argv[1], argv[2], NULL)) printf("Privalege escalation failed, run with su for it to work.");
     return 0;
+
 }
 
 int help() {
@@ -72,9 +50,7 @@ int help() {
     printf("uninstall - removes a program and all it's data! Only use if you know what you're doing.");
     printf("find - searches for a program in Neptune's database\n");
     printf("list - lists current apps.\n");
-    printf("refresh - updates list of appimages\n");
     printf("help - displays help menu\n");
-    printf("--install - installs Neptune\n");
-    printf("--uninstall - uninstalls Neptune\n");
+    printf("--uninstall - uninstalls local Neptune data\n");
     return 0;
 }

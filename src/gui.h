@@ -10,8 +10,9 @@ int run_once() {
     return IUP_DEFAULT;
 }
 
-int gui(int argc, char **argv, char* appimage)
+int gui(int argc, char **argv)
 {
+    char* appimage = combine(getenv("OWD"), argv[1], 1);
 
     char* message = "Would you like to integrate this AppImage or Run it once?\n\nIf you integrate the AppImage, it will be installed to your computer like a windows exe. The AppImage will also get a simple sandboxing profile to protect your computer's data.\n\nIf you click run once, the AppImage will run unprotected like a standard linux executable.";
 
@@ -53,6 +54,7 @@ int gui(int argc, char **argv, char* appimage)
 
     IupSetGlobal("UNFILTERED", argv[1]);
     IupSetGlobal("PROGRAM", appimage);
+    free(appimage);
 
     /* Registers callbacks */
     IupSetCallback(integrate, "ACTION", integration);
