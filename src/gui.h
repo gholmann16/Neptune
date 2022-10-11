@@ -1,69 +1,50 @@
-int integration() {
-    printf("Integrating AppImage: %s", IupGetGlobal("UNFILTERED"));
-    install(IupGetGlobal("UNFILTERED"));
-    return IUP_DEFAULT;
+int integration(GtkWidget *widget, gpointer *data) {
+    printf("Integrating AppImage: %s\n", (char *) data);
+    install((char *) data);
+    gtk_main_quit();
+    return 0;
 }
 
-int run_once() {
-    printf("Running executable: %s", IupGetGlobal("PROGRAM"));
-    sexecl(IupGetGlobal("PROGRAM"), NULL);
-    return IUP_DEFAULT;
+int run_once(GtkWidget *widget, gpointer *data) {
+    if (access((char *) data, F_OK)) {
+        printf("Cannot find %s\n", (char*) data);
+        exit(1);
+    }
+    printf("Running executable: %s\n", (char *) data);
+    if (access((char *) data, X_OK)) {
+        struct stat fs;
+        stat((char *) data,&fs);
+        chmod((char *) data, fs.st_mode | S_IXUSR);
+    }
+    sexecl((char *) data, NULL);
+    gtk_main_quit();
+    return 0;
 }
 
-int gui(int argc, char **argv)
-{
-    char* appimage = combine(getenv("OWD"), argv[1], 1);
-
-    char* message = "Would you like to integrate this AppImage or Run it once?\n\nIf you integrate the AppImage, it will be installed to your computer like a windows exe. The AppImage will also get a simple sandboxing profile to protect your computer's data.\n\nIf you click run once, the AppImage will run unprotected like a standard linux executable.";
-
-    Ihandle *dlg, *integrate, *run, *text, *hbox, *vbox;
-
-    IupOpen(&argc, &argv);
+int gui(char* appimage) {
+    GtkWidget *window;
+    GtkBuilder *builder;
     
-    integrate = IupButton("Integrate", NULL);
-    IupSetAttribute(integrate, "SIZE", "60");
-    run = IupButton("Run Once", NULL);
-    IupSetAttribute(run, "SIZE", "60");
+    gtk_init(NULL, NULL);
 
-    text = IupLabel(message); //TODO: Languages
-    IupSetAttribute(text, "SIZE", "350");
-    //IupSetAttribute(text, "FONTSIZE", "16");
-    IupSetAttribute(text, "NAME", "TEXT");
-    IupSetAttribute(text, "READONLY", "YES");
-    IupSetAttribute(text, "WORDWRAP", "YES");
-    
-    hbox = IupHbox(
-        integrate,
-        run,
-        NULL
-    );
-    IupSetAttribute(hbox, "GAP", "320");
+    builder = gtk_builder_new ();
+    initialize_installer (builder);
 
-    vbox = IupVbox(
-        text,
-        hbox,
-        NULL
-    );
-    IupSetAttribute(vbox, "MARGIN", "15x15");
-    IupSetAttribute(vbox, "GAP", "50");
+    window = GTK_WIDGET (gtk_builder_get_object (builder, "a_window"));
+    gtk_builder_connect_signals (builder, NULL);
+    g_signal_connect (window, "delete-event", gtk_main_quit, NULL);
 
-    dlg = IupDialog(vbox);
-    IupSetAttribute(dlg, "TITLE", "Neptune AppImage Installer");
+    GtkWidget *install;
+    install = GTK_WIDGET (gtk_builder_get_object (builder, "install_button"));
+    g_signal_connect (install, "clicked", G_CALLBACK(integration), (gpointer) appimage);
 
-    IupSetInt(text, "VALUE", 0);
+    GtkWidget *run;
+    run = GTK_WIDGET (gtk_builder_get_object (builder, "run_button"));
+    g_signal_connect (run, "clicked", G_CALLBACK(run_once), (gpointer) appimage);
 
-    IupSetGlobal("UNFILTERED", argv[1]);
-    IupSetGlobal("PROGRAM", appimage);
-    free(appimage);
+    gtk_widget_show_all (window);
 
-    /* Registers callbacks */
-    IupSetCallback(integrate, "ACTION", integration);
-    IupSetCallback(run, "ACTION", run_once);
+    gtk_main ();
+    return 0;
 
-    IupShowXY(dlg, IUP_CENTER, IUP_CENTER);
-
-    IupMainLoop();
-
-    IupClose();
-    return EXIT_SUCCESS;
 }

@@ -10,3 +10,6 @@ installer
 lib
 other.sh
 include
+def.h
+store.h
+installer.h
