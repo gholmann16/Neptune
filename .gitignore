@@ -13,3 +13,4 @@ include
 def.h
 store.h
 installer.h
+*~
