@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Terminal=false
-Exec=Neptune
-Name=Neptune
-Icon=Neptune
-MimeType=application/vnd.appimage;
-Categories=Utility;

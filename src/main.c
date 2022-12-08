@@ -20,9 +20,9 @@ int help();
 
 int main(int argc, char* argv[]) {
 
-    char * ptr = strrchr(getenv("ARGV0"), '/');
+    char * ptr = strrchr(argv[0], '/');
     if (ptr == NULL)
-        ptr = getenv("ARGV0");
+        ptr = argv[0];
     else
         ptr = ptr + 1;
 

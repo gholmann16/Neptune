@@ -1,3 +1,7 @@
+int newfeatapp(GtkContainer *object) {
+    char path[256];
+}
+
 int newapp(GtkContainer *object, char* appname, char* location) {
     char path[256 + 32];
     strcpy(path, location);
@@ -58,9 +62,14 @@ int self()
 
     GtkContainer *interior = GTK_CONTAINER(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
     int i = 0;
-    for (int i = 0; i < last; ++i) {
+    for (i = 0; i < last; ++i) {
         newapp(interior, arr[i], location);
         free(arr[i]);
+    }
+
+    GtkContainer *featured = GTK_CONTAINER(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+    for (i = 0; i < 5; ++i) {
+        newfeatapp(featured);
     }
 
     GtkContainer *object = GTK_CONTAINER(gtk_builder_get_object(builder, "applist"));

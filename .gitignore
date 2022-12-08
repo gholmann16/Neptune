@@ -14,3 +14,4 @@ def.h
 store.h
 installer.h
 *~
+src/#store.ui#
