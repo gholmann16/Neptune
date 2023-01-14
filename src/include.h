@@ -3,3 +3,4 @@ int sexecl(char *command, ...);
 int remove_preferences();
 int install_preferences();
 char* icon(char *path);
+char* getdir(char *dir);

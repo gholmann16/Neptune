@@ -20,14 +20,21 @@ int help();
 
 int main(int argc, char* argv[]) {
 
+    char path[MAX_FILE_LENGTH];
+    realpath("/proc/self/exe", path);
     char * ptr = strrchr(argv[0], '/');
     if (ptr == NULL)
         ptr = argv[0];
     else
         ptr = ptr + 1;
+    char * ptr2 = strrchr(path, '/');
+    if (ptr2 == NULL)
+        ptr2 = path;
+    else
+        ptr2 = ptr2 + 1;
 
     if(installed()) install_preferences();
-    if(strcmp(ptr, "nep") != 0 && strcmp(ptr, "Neptune-x86_64.AppImage") != 0) return run(ptr, argc, argv);
+    if(strcmp(ptr, ptr2) != 0) return run(ptr, argc, argv);
     else if(argc == 1) return self(argc, argv);
     else if(strcmp(argv[1], "help\0") == 0) return help();
     else if(strcmp(argv[1], "list\0") == 0) return list();
@@ -37,6 +44,7 @@ int main(int argc, char* argv[]) {
     else if(strcmp(argv[1], "reinstall\0") == 0) return reinstall(argv[2]);
     else if(strcmp(argv[1], "update\0") == 0) return update(argc, argv[2]);
     else if(strcmp(argv[1], "find\0") == 0) return find(argv[2]);
+    else if(strcmp(argv[1], "upgrade\0") == 0) return upgrade();
     else if(strcmp(argv[1], "permissions\0") == 0) {
         if (argc < 3)
             printf("Not enough arguments inputted. Run 'nep permissions help' for a list of commmands.\n");
@@ -65,8 +73,10 @@ int main(int argc, char* argv[]) {
 }
 
 int installed() {
-    chdir(getenv("HOME"));
-    return access(".config/neptune/dir", F_OK);
+    char data[MAX_DIR_LEN];
+    strcpy(data, getenv("HOME"));
+    strcat(data, "/.config/neptune/dir");
+    return access(data, F_OK);
 }
 
 int help() {
