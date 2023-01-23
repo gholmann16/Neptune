@@ -1,7 +1,7 @@
 #!/bin/bash
 gcc src/main.c \
     $(pkg-config --libs --cflags gtk+-3.0) \
-    -rdynamic \
+    -rdynamic -g \
     lib/neptune.o lib/update.o lib/ezxml.o -lstdc++ \
     lib/libappimage_static.a lib/libboost_filesystem.a lib/libappimage_hashlib.a \
     -lsquashfuse -larchive -lrsvg-2 \
