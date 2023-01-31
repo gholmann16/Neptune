@@ -27,35 +27,51 @@ int self()
     strcat(path, "/.config/neptune/mirror");
     if (access(path, F_OK)) { 
         printf("Local mirror not availible. Downloading latest mirror.\n");
-        if(fork())
-            update(2, NULL);
+        update(2, NULL);
     }
-    else {
-        ezxml_t app;
-        ezxml_t mirror = ezxml_parse_file(path);
-        for (app = ezxml_child(mirror, "app"); app; app = app->next) {
-            if (ezxml_attr(app, "featured") != NULL) {
-                printf("featured app spotted! %s\n", ezxml_attr(app, "name"));
-                char thumbnail[MAX_DIR_LEN];
-                strcpy(thumbnail, getenv("HOME"));
-                strcat(thumbnail, "/.cache/neptune/");
-                strcat(thumbnail, ezxml_attr(app, "name"));
-                if(access(thumbnail, F_OK))
-                    sexecl("/usr/bin/wget", ezxml_child(app, "image")->txt, "-q", "-O", thumbnail, NULL);
-                GtkWidget * pic = gtk_image_new_from_file(thumbnail);
 
-                GtkWidget * featured_box = gtk_frame_new(ezxml_attr(app, "name"));
-                gtk_frame_set_label_align(GTK_FRAME(featured_box), 0.5, 0);
+    ezxml_t mirror = ezxml_parse_file(path);
+    ezxml_t app;
+    for (app = ezxml_child(mirror, "app"); app; app = app->next) {
+        if (ezxml_attr(app, "featured") != NULL) {
+            char thumbnail[MAX_DIR_LEN];
+            strcpy(thumbnail, getenv("HOME"));
+            strcat(thumbnail, "/.cache/neptune/featured/");
+            strcat(thumbnail, ezxml_attr(app, "name"));
+            if(access(thumbnail, F_OK))
+                sexecl("/usr/bin/wget", ezxml_child(app, "image")->txt, "-q", "-O", thumbnail, NULL);
+            GtkWidget * pic = gtk_image_new_from_file(thumbnail);
 
-                gtk_container_add(GTK_CONTAINER(featured_box), pic);
-                gtk_box_pack_start(featured, featured_box, 1, 1, 0);
-            }
+            GtkWidget * featured_box = gtk_frame_new(ezxml_attr(app, "name"));
+            gtk_frame_set_label_align(GTK_FRAME(featured_box), 0.5, 0);
+
+            gtk_container_add(GTK_CONTAINER(featured_box), pic);
+            gtk_box_pack_start(featured, featured_box, 1, 1, 0);
         }
     }
-
     GtkWidget * search = GTK_WIDGET(gtk_builder_get_object(builder, "search"));
-    GtkWidget * results = GTK_WIDGET(gtk_builder_get_object(builder, "results"));
-    g_signal_connect(search, "search-changed", G_CALLBACK(search_changed), results);
+    g_signal_connect(search, "search-changed", G_CALLBACK(search_changed), mirror);
+
+    GtkBox * list = GTK_BOX(gtk_builder_get_object(builder, "list"));
+    
+    GtkGrid * categories = GTK_GRID(gtk_grid_new());
+    gtk_grid_set_row_spacing(categories, 3);
+    gtk_grid_set_column_spacing(categories, 3);
+    char * cat[10] = {
+        "All", "Audio", "Education", "Games", "Graphics",
+        "Internet", "Office", "Programming", "Systems & Tools", "Video"
+    };
+    GtkWidget * cat_button[10];
+    int l;
+    for (l = 0; l < 10; l++) {
+        cat_button[l] = gtk_button_new_with_label(cat[l]);
+        gtk_grid_attach(categories, cat_button[l], (l*12) % 60, (l/5)*20, 12, 20);
+        gtk_widget_set_hexpand(cat_button[l], TRUE);
+    }
+
+    GtkWidget * filler = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start(list, filler, 1, 0, 0);
+    gtk_box_pack_start(list, GTK_WIDGET(categories), 0, 0, 0);
 
     /* Installed tab */
 
@@ -156,16 +172,11 @@ int self()
     gtk_container_add(settings, data_explanation);
     gtk_container_add(settings, data_folder);
 
-    GtkIconTheme * icon_theme = gtk_icon_theme_get_default();
-
-    gtk_window_set_icon_name(GTK_WINDOW(window), "test");
-
     gtk_widget_show_all (window);
     for (i = 0; i < last; ++i) {
         gtk_widget_hide(applications[i]);
     }
-    gtk_widget_hide(results);
-
+    
     gtk_main ();
     return 0;
 }
