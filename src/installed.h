@@ -4,37 +4,76 @@ struct App {
     GtkContainer * interior;
 };
 
+void remove_app(GtkWidget * self, GString * name) {
+    destroy(name->str);
+}
+
+void uninstall_app(GtkWidget * self, GString * name) {
+    uninstall(name->str);
+}
+
+int real(const char * io) {
+    char * copy = strdup(io);
+    if(strchr(copy, ':') != NULL)
+        copy[strchr(copy, ':') - copy] = '\0';
+    DIR* dir = opendir(copy);
+    if (dir) {
+        closedir(dir);
+        free(copy);
+        return 1;
+    }
+    else {
+        char * xdgs[8] = {"xdg-desktop", "xdg-download", "xdg-documents", "xdg-music", "xdg-pictures", "xdg-publicshare", "xdg-templates", "xdg-videos"};
+        int i;
+        for(i = 0; i < 8; i++) {
+            if(strcmp(copy, xdgs[i]) == 0) {
+                free(copy);
+                return 1;
+            }
+        }
+    }
+    free(copy);
+    return 0;
+}
+
 void remove_file(GtkInfoBar* self, gint response_id, GString * string) {
     GtkWidget * content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(self));
     GList * list = gtk_container_get_children (GTK_CONTAINER(content_area));
     GtkWidget * inbox = list->data;
     char * perm = strdup(gtk_entry_get_text(GTK_ENTRY(inbox)));
-    strcat(perm, ";");
-    permissions(-1, string->str, perm);
+    if(real(perm)) {
+        strcat(perm, ";");
+        permissions(-1, string->str, perm);
+    }
     free(perm);
     gtk_widget_hide(GTK_WIDGET(self));
 }
 
-void text_changed(GtkEntry* self, GString * string) {
+void text_completed(GtkEntry * self, GString * string) {
+    char * permission = strdup(gtk_entry_get_text(self));
+    if(real(permission)) {
+        char * name = strdup(gtk_widget_get_name(GTK_WIDGET(self)));
+        if(strcmp(name, "GtkEntry") != 0) {
+            strcat(name, ";");
+            permissions(-1, string->str, name);
+        }
+        free(name);
 
-    gtk_entry_set_icon_from_icon_name(self, 0, "dialog-question");
+        gtk_widget_set_name(GTK_WIDGET(self), permission);
+        strcat(permission, ";");
+        permissions(1, string->str, permission);
 
-    char * copy = strdup(gtk_entry_get_text(self));
-    DIR* dir = opendir(copy);
-    if (dir) {
-        gtk_entry_set_icon_from_icon_name(self, 0, "dialog-ok");
     }
     else {
-        if(strchr(copy, ':') != NULL)
-            copy[strchr(copy, ':') - copy] = '\0';
-        char * xdgs[8] = {"xdg-desktop", "xdg-download", "xdg-documents", "xdg-music", "xdg-pictures", "xdg-publicshare", "xdg-templates", "xdg-videos"};
-        int i;
-        for(i = 0; i < 8; i++) {
-            if(strcmp(copy, xdgs[i]) == 0)
-                gtk_entry_set_icon_from_icon_name(self, 0, "dialog-ok");
-        }
+        printf("%s is not a valid permission.\n", permission);
     }
-    free(copy);
+    free(permission);
+}
+
+void text_changed(GtkEntry* self) {
+    gtk_entry_set_icon_from_icon_name(self, 0, "dialog-question");
+    if(real(gtk_entry_get_text(self)))
+        gtk_entry_set_icon_from_icon_name(self, 0, "dialog-ok");
 }
 
 void add_folder(GtkWidget * file_button, GString * string) {
@@ -57,10 +96,11 @@ void add_folder(GtkWidget * file_button, GString * string) {
     GtkEntryBuffer * buffer = gtk_entry_buffer_new(NULL, -1);
     gtk_entry_set_buffer(GTK_ENTRY(view), buffer);
     gtk_entry_set_icon_from_icon_name(GTK_ENTRY(view), 0, "dialog-question");
-    gtk_box_pack_start(GTK_BOX(content_area), view, 1, 1, 5);
+    gtk_box_pack_start(GTK_BOX(content_area), view, 0, 0, 0);
     //gtk_box_pack_end(GTK_BOX(content_area), write_access, 0, 0, 0);
 
-    g_signal_connect(view, "changed", G_CALLBACK(text_changed), string);
+    g_signal_connect(view, "changed", G_CALLBACK(text_changed), NULL);
+    g_signal_connect(view, "activate", G_CALLBACK(text_completed), string);
     g_signal_connect(infobar, "response", G_CALLBACK(remove_file), string);
 
     gtk_widget_show_all(infobar);
@@ -112,6 +152,7 @@ void button_switch(GtkWidget * togglebutton, char * data) {
             fgetc(f);
         fputc(label[0], f);
         fclose(f);
+        printf("Permissions level changed to %c\n", label[0]);
     }
 }
 
@@ -128,6 +169,10 @@ void closeapp(GtkWidget * button, gpointer data) {
 }
 
 int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **applications, GtkWidget* installed_tab) {
+    
+    //Find you what to do
+    GString * gpath = g_string_new(appname);
+
     char path[MAX_DIR_LEN];
     strcpy(path, location);
     strncat(path, appname, 256);
@@ -137,9 +182,15 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
     strcat(cachepath, "/.cache/neptune/apps/");
     strcat(cachepath, appname);
     if(access(cachepath, F_OK)) {
-        char* pic = icon(path);
-        appimage_extract_file_following_symlinks(path, pic, cachepath);
-        free(pic);
+        appimage_extract_file_following_symlinks(path, ".DirIcon", cachepath);
+        char pic[1] = {0};
+        int fd = open(cachepath, O_RDONLY);
+        read(fd, pic, 1);
+        if(pic[0] = '<') {
+            rename(cachepath, "/tmp/temp.svg");
+            system("/usr/bin/rsvg-convert /tmp/temp.svg > /tmp/temp.png");
+            rename("/tmp/temp.png", cachepath);
+        }
         sexecl("/usr/bin/convert", cachepath, "-resize", "32x32", cachepath, NULL);
     }
 
@@ -176,6 +227,8 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
     GtkWidget * title = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     GtkWidget * icon = gtk_image_new_from_pixbuf(pixbuf);
     GtkWidget * name = gtk_label_new(appname);
+    GtkWidget * remove = gtk_button_new_with_label("remove");
+    GtkWidget * uninstall = gtk_button_new_with_label("uninstall");
     GtkWidget * header = gtk_label_new("Description:");
     GtkWidget * description = gtk_label_new("No metdata found in appimage.");
 
@@ -192,10 +245,15 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
     free(buffer);
 
     g_signal_connect(back, "clicked", G_CALLBACK(closeapp), application);
+    g_signal_connect(remove, "clicked", G_CALLBACK(remove_app), gpath);
+    g_signal_connect(uninstall, "clicked", G_CALLBACK(uninstall_app), gpath);
 
     gtk_container_add(GTK_CONTAINER(title), back);
     gtk_container_add(GTK_CONTAINER(title), icon);
     gtk_container_add(GTK_CONTAINER(title), name);
+    gtk_box_pack_end(GTK_BOX(title), uninstall, 0, 0, 0);
+    gtk_box_pack_end(GTK_BOX(title), remove, 0, 0, 0);
+
     gtk_container_add(table, title);
     gtk_container_add(table, header);
     gtk_container_add(table, description);
@@ -239,7 +297,6 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
     gtk_box_pack_start(GTK_BOX(simple), simple_box, 0, 0, 0);
 
     //advanced permissions
-    GString * gpath = g_string_new(appname);
     GtkWidget * advanced = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
 
     FILE * depth = fopen(permloc, "r");

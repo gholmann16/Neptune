@@ -28,3 +28,7 @@ void search_changed(GtkSearchEntry* self, ezxml_t mirror) {
 void stop_search() {
     puts("stop-search");
 }
+
+void view_app() {
+    puts("Viewing app");
+}

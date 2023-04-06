@@ -42,11 +42,13 @@ int self()
                 sexecl("/usr/bin/wget", ezxml_child(app, "image")->txt, "-q", "-O", thumbnail, NULL);
             GtkWidget * pic = gtk_image_new_from_file(thumbnail);
 
-            GtkWidget * featured_box = gtk_frame_new(ezxml_attr(app, "name"));
-            gtk_frame_set_label_align(GTK_FRAME(featured_box), 0.5, 0);
+            GtkWidget * featured_box_button = gtk_button_new_with_label(ezxml_attr(app, "name"));
+            //gtk_frame_set_label_align(GTK_FRAME(featured_box), 0.5, 0);
+            gtk_button_set_always_show_image(GTK_BUTTON(featured_box_button), TRUE);
+            gtk_button_set_image(GTK_BUTTON(featured_box_button), pic);
+            gtk_box_pack_start(featured, featured_box_button, 1, 1, 0);
 
-            gtk_container_add(GTK_CONTAINER(featured_box), pic);
-            gtk_box_pack_start(featured, featured_box, 1, 1, 0);
+            g_signal_connect(featured_box_button, "clicked", G_CALLBACK(view_app), NULL);
         }
     }
     GtkWidget * search = GTK_WIDGET(gtk_builder_get_object(builder, "search"));
