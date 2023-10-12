@@ -186,7 +186,7 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
         char pic[1] = {0};
         int fd = open(cachepath, O_RDONLY);
         read(fd, pic, 1);
-        if(pic[0] = '<') {
+        if(pic[0] == '<') {
             rename(cachepath, "/tmp/temp.svg");
             system("/usr/bin/rsvg-convert /tmp/temp.svg > /tmp/temp.png");
             rename("/tmp/temp.png", cachepath);
@@ -198,6 +198,10 @@ int newapp(GtkContainer *object, char* appname, char* location, GtkWidget **appl
     //gtk_widget_set_hexpand(label, 1);
     GError* error = NULL;
     GdkPixbuf * pixbuf = gdk_pixbuf_new_from_file(cachepath, &error);
+    if( error != NULL ) {
+        printf(error->message);
+        g_clear_error (&error);
+    }
     GtkWidget * image = gtk_image_new_from_pixbuf(pixbuf);
     GtkWidget * settings = gtk_button_new_with_label("Settings");
     GtkWidget * button = gtk_button_new_with_label("Open");

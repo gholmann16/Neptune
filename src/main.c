@@ -10,7 +10,6 @@
 #define MAX_FILE_LENGTH 256 //might wanna look at these values in the future
 
 #include "include.h"
-#include "installer.h"
 #include "store.h"
 #include "gui.h"
 #include "application.h"
